@@ -11,6 +11,7 @@ import '../widgets/handwriting_input.dart';
 import '../widgets/step_by_step_view.dart';
 import '../widgets/ar_camera_view.dart';
 import '../widgets/unit_converter_dialog.dart';
+import '../widgets/unit_converter_menu.dart';
 import '../services/calculator_engine.dart';
 import '../services/history_manager.dart';
 import '../services/theme_manager.dart';
@@ -691,7 +692,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                           CalculatorKeypad(
                             isScientificMode: _isScientificMode,
                             onButtonPressed: _onButtonPressed,
-                            onUnitConverterPressed: _showUnitConverter,
                           ),
                           // History tab
                           HistoryPanel(
@@ -750,6 +750,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 builder: (context) => const CurrencyConverterDialog(),
               );
               break;
+            case 'unit':
+              showUnitConverterMenu(context, _showUnitConverter);
+              break;
             case 'settings':
               _showSettings(context, localizations);
               break;
@@ -787,6 +790,16 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 const Icon(Icons.currency_exchange, size: 20),
                 const SizedBox(width: 8),
                 const Text('Currency Converter'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'unit',
+            child: Row(
+              children: [
+                const Icon(Icons.swap_horiz, size: 20),
+                const SizedBox(width: 8),
+                const Text('Unit Converter'),
               ],
             ),
           ),
@@ -862,6 +875,14 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           );
         },
         tooltip: 'Currency Converter',
+      ),
+      // Unit Converter
+      IconButton(
+        icon: const Icon(Icons.swap_horiz),
+        onPressed: () {
+          showUnitConverterMenu(context, _showUnitConverter);
+        },
+        tooltip: 'Unit Converter',
       ),
       // Settings
       IconButton(

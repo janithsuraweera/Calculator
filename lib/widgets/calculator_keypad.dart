@@ -5,13 +5,11 @@ import 'calculator_button.dart';
 class CalculatorKeypad extends StatelessWidget {
   final bool isScientificMode;
   final Function(String) onButtonPressed;
-  final Function(String)? onUnitConverterPressed;
 
   const CalculatorKeypad({
     super.key,
     required this.isScientificMode,
     required this.onButtonPressed,
-    this.onUnitConverterPressed,
   });
 
   @override
@@ -51,104 +49,15 @@ class CalculatorKeypad extends StatelessWidget {
           _buildBasicRow4(context),
           SizedBox(height: rowSpacing),
           _buildBasicRow5(context),
-          // Unit converter row (available in both modes) - compact
-          SizedBox(height: rowSpacing * 0.5),
-          _buildUnitConverterRow(context, rowSpacing),
         ],
       ),
     );
 
-    // Wrap in SingleChildScrollView to prevent overflow (both modes)
-    // This allows all buttons including unit converters to fit
-    return SingleChildScrollView(child: keypadContent);
-  }
-
-  // Unit converter row - compact version with expandable design
-  Widget _buildUnitConverterRow(BuildContext context, double rowSpacing) {
-    if (onUnitConverterPressed == null) {
-      return const SizedBox.shrink();
+    // Wrap in SingleChildScrollView when in scientific mode to prevent overflow
+    if (isScientificMode) {
+      return SingleChildScrollView(child: keypadContent);
     }
-
-    final mediaQuery = MediaQuery.of(context);
-    final isPortrait = mediaQuery.orientation == Orientation.portrait;
-
-    // Adjust button layout based on orientation
-    if (isPortrait) {
-      // Portrait: 2 rows of 3 buttons each
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildUnitButton('Length', 'length', Colors.blue),
-              ),
-              Expanded(child: _buildUnitButton('Area', 'area', Colors.green)),
-              Expanded(
-                child: _buildUnitButton('Volume', 'volume', Colors.orange),
-              ),
-            ],
-          ),
-          SizedBox(height: rowSpacing * 0.5),
-          Row(
-            children: [
-              Expanded(child: _buildUnitButton('Time', 'time', Colors.purple)),
-              Expanded(
-                child: _buildUnitButton('Temp', 'temperature', Colors.red),
-              ),
-              Expanded(
-                child: _buildUnitButton('Weight', 'weight', Colors.indigo),
-              ),
-            ],
-          ),
-        ],
-      );
-    } else {
-      // Landscape: 1 row of 6 buttons (more horizontal space)
-      return Row(
-        children: [
-          Expanded(child: _buildUnitButton('Length', 'length', Colors.blue)),
-          Expanded(child: _buildUnitButton('Area', 'area', Colors.green)),
-          Expanded(child: _buildUnitButton('Volume', 'volume', Colors.orange)),
-          Expanded(child: _buildUnitButton('Time', 'time', Colors.purple)),
-          Expanded(child: _buildUnitButton('Temp', 'temperature', Colors.red)),
-          Expanded(child: _buildUnitButton('Weight', 'weight', Colors.indigo)),
-        ],
-      );
-    }
-  }
-
-  // Build unit converter button - simplified version
-  Widget _buildUnitButton(String label, String category, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3.0, vertical: 3.0),
-      child: Material(
-        color: color.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(10),
-        elevation: 0,
-        child: InkWell(
-          onTap: () => onUnitConverterPressed!(category),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            height: 42,
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
-              textScaler: const TextScaler.linear(1.0),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-      ),
-    );
+    return keypadContent;
   }
 
   // Scientific functions row 1
