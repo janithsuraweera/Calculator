@@ -19,7 +19,7 @@ class CalculatorEngine {
       processed = _processScientificFunctions(processed);
 
       // Create parser and context with standard math functions
-      Parser p = Parser();
+      final p = GrammarParser();
       ContextModel cm = ContextModel();
 
       // Bind constants - math_expressions uses Number for numeric values
@@ -77,7 +77,7 @@ class CalculatorEngine {
           .replaceAll('÷', '/')
           .replaceAll('π', 'pi')
           .replaceAll('e', 'e');
-      Parser p = Parser();
+      final p = GrammarParser();
       ContextModel cm = ContextModel();
       cm.bindVariableName('pi', Number(3.141592653589793));
       cm.bindVariableName('e', Number(2.718281828459045));

@@ -457,15 +457,15 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 final currentAccentColorIndex =
                     await ThemeManager.getAccentColorIndex();
 
-                if (mounted) {
-                  await showDialog<Map<String, dynamic>>(
-                    context: context,
+                if (!mounted) return;
+
+                await showDialog<Map<String, dynamic>>(
+                  context: context,
                     builder: (context) => EnhancedSettingsDialog(
                       currentTheme: currentTheme,
                       currentAccentColorIndex: currentAccentColorIndex,
                     ),
                   );
-                }
               },
               tooltip: localizations.settings,
             ),

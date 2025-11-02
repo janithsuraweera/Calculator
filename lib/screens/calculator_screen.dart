@@ -364,12 +364,16 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () async {
+              if (!mounted) return;
+
               final currentTheme =
                   Theme.of(context).brightness == Brightness.dark
                   ? ThemeMode.dark
                   : ThemeMode.light;
               final currentAccentColorIndex =
                   await ThemeManager.getAccentColorIndex();
+
+              if (!mounted) return;
 
               final result = await showDialog<Map<String, dynamic>>(
                 context: context,
@@ -379,7 +383,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                 ),
               );
 
-              if (result != null) {
+              if (result != null && mounted) {
                 await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
                 await ThemeManager.setAccentColorIndex(
                   result['accentColorIndex'] as int,
