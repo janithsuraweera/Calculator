@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
-import 'screens/calculator_screen.dart';
+import 'screens/enhanced_calculator_screen.dart';
 import 'services/theme_manager.dart';
 
 /// Main entry point of the Calculator application
-/// Calculator application එකේ main entry point එක
 /// Author: Janith Suraweera
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -90,7 +89,7 @@ class _CalculatorAppState extends State<CalculatorApp> {
       theme: themeData,
       darkTheme: themeData,
       themeMode: _themeMode,
-      home: const CalculatorScreen(),
+      home: const EnhancedCalculatorScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

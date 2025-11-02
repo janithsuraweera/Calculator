@@ -1,17 +1,14 @@
 import 'package:math_expressions/math_expressions.dart';
 
 /// Calculator engine for evaluating mathematical expressions
-/// ගණිතමය expressions evaluate කිරීම සඳහා calculator engine එක
 class CalculatorEngine {
   /// Evaluate an infix mathematical expression
-  /// Infix expression එකක් evaluate කිරීම
   /// Supports: +, -, *, /, parentheses, decimals, and scientific functions
   static String? evaluate(String expression) {
     try {
       if (expression.isEmpty) return null;
 
       // Replace display symbols with math symbols
-      // Display symbols math symbols වලට replace කිරීම
       String processed = expression
           .replaceAll('×', '*')
           .replaceAll('÷', '/')
@@ -19,7 +16,6 @@ class CalculatorEngine {
           .replaceAll('−', '-'); // Replace minus sign
 
       // Handle scientific functions - convert to math_expressions format
-      // විද්‍යාත්මක functions handle කිරීම - math_expressions format එකට convert කිරීම
       processed = _processScientificFunctions(processed);
 
       // Create parser and context with standard math functions
