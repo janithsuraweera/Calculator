@@ -128,7 +128,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             // Haptic feedback settings
             _buildSectionTitle(theme, 'Haptic Feedback'),
             DropdownButtonFormField<String>(
-              value: hapticIntensity,
+              initialValue: hapticIntensity,
               items: const [
                 DropdownMenuItem(value: 'light', child: Text('Light')),
                 DropdownMenuItem(value: 'medium', child: Text('Medium')),
@@ -156,7 +156,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
               },
             ),
             DropdownButtonFormField<String>(
-              value: soundTheme,
+              initialValue: soundTheme,
               items: const [
                 DropdownMenuItem(value: 'classic', child: Text('Classic')),
                 DropdownMenuItem(value: 'modern', child: Text('Modern')),
@@ -203,10 +203,12 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             await HapticSoundManager.setSoundTheme(soundTheme);
             await VaultManager.setVaultEnabled(vaultEnabled);
 
-            Navigator.of(context).pop({
-              'theme': selectedTheme,
-              'accentColorIndex': selectedAccentColorIndex,
-            });
+            if (context.mounted) {
+              Navigator.of(context).pop({
+                'theme': selectedTheme,
+                'accentColorIndex': selectedAccentColorIndex,
+              });
+            }
           },
           child: const Text('Save'),
         ),

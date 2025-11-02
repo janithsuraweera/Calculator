@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
-import '../services/calculator_engine.dart';
 
 /// Handwriting input widget for drawing mathematical expressions
 class HandwritingInput extends StatefulWidget {
@@ -14,14 +12,6 @@ class HandwritingInput extends StatefulWidget {
 
 class _HandwritingInputState extends State<HandwritingInput> {
   final List<Offset> _points = <Offset>[];
-  final ui.PictureRecorder _recorder = ui.PictureRecorder();
-  late ui.Canvas _canvas;
-
-  @override
-  void initState() {
-    super.initState();
-    _canvas = ui.Canvas(_recorder);
-  }
 
   /// Clear the drawing
   void clear() {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../models/calculation_history.dart';
 
 /// History panel widget showing calculation history
@@ -16,11 +15,33 @@ class HistoryPanel extends StatelessWidget {
     required this.onClearHistory,
   });
 
+  /// Format date for display
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final month = months[date.month - 1];
+    final day = date.day.toString().padLeft(2, '0');
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '$month $day, $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final dateFormat = DateFormat('MMM dd, HH:mm');
 
     if (history.isEmpty) {
       return Center(
@@ -32,13 +53,13 @@ class HistoryPanel extends StatelessWidget {
               Icon(
                 Icons.history,
                 size: 64,
-                color: colorScheme.onSurface.withOpacity(0.3),
+                color: colorScheme.onSurface.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
                 'No calculation history',
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.5),
+                  color: colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -98,9 +119,9 @@ class HistoryPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        dateFormat.format(item.timestamp),
+                        _formatDate(item.timestamp),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.5),
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -108,7 +129,7 @@ class HistoryPanel extends StatelessWidget {
                   trailing: Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: colorScheme.onSurface.withOpacity(0.3),
+                    color: colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                   onTap: () => onHistoryItemTap(item.result),
                 ),

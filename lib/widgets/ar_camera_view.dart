@@ -40,7 +40,7 @@ class _ARCameraViewState extends State<ARCameraView> {
     });
 
     try {
-      final image = await _arService!.cameraController!.takePicture();
+      await _arService!.cameraController!.takePicture();
       // Process image for recognition
       // Note: This is simplified - actual implementation would process the image
       // and use ML Kit for text recognition
@@ -84,7 +84,9 @@ class _ARCameraViewState extends State<ARCameraView> {
             right: 0,
             child: Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.7)),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.7),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

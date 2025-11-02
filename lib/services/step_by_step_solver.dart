@@ -1,4 +1,3 @@
-import 'package:math_expressions/math_expressions.dart';
 import 'calculator_engine.dart';
 
 /// Step-by-step calculation solver
@@ -75,7 +74,6 @@ class StepByStepSolver {
 
       // Handle exponents
       while (processed.contains('^')) {
-        final index = processed.indexOf('^');
         // Extract base and exponent
         // This is simplified - full implementation would parse properly
         steps.add(

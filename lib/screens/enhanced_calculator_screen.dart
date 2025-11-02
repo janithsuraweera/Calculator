@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/calculator_display.dart';
 import '../widgets/calculator_keypad.dart';
@@ -458,13 +457,15 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 final currentAccentColorIndex =
                     await ThemeManager.getAccentColorIndex();
 
-                await showDialog<Map<String, dynamic>>(
-                  context: context,
-                  builder: (context) => EnhancedSettingsDialog(
-                    currentTheme: currentTheme,
-                    currentAccentColorIndex: currentAccentColorIndex,
-                  ),
-                );
+                if (mounted) {
+                  await showDialog<Map<String, dynamic>>(
+                    context: context,
+                    builder: (context) => EnhancedSettingsDialog(
+                      currentTheme: currentTheme,
+                      currentAccentColorIndex: currentAccentColorIndex,
+                    ),
+                  );
+                }
               },
               tooltip: localizations.settings,
             ),
