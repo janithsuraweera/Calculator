@@ -21,9 +21,11 @@ class CalculatorKeypad extends StatelessWidget {
     final double padding = screenWidth < 360 ? 6.0 : 8.0;
     final double rowSpacing = screenWidth < 360 ? 6.0 : 8.0;
 
-    return Padding(
+    // Make keypad scrollable in scientific mode to prevent overflow
+    final keypadContent = Padding(
       padding: EdgeInsets.all(padding),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Scientific functions row (shown only in scientific mode)
           if (isScientificMode) ...[
@@ -45,6 +47,12 @@ class CalculatorKeypad extends StatelessWidget {
         ],
       ),
     );
+
+    // Wrap in SingleChildScrollView when in scientific mode to prevent overflow
+    if (isScientificMode) {
+      return SingleChildScrollView(child: keypadContent);
+    }
+    return keypadContent;
   }
 
   // Scientific functions row 1

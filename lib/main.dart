@@ -45,10 +45,19 @@ class _CalculatorAppState extends State<CalculatorApp> {
 
   /// Setup listener for theme changes
   void _setupThemeListener() {
-    // Check for theme changes periodically
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _checkThemeChanges();
+    // Continuously check for theme changes every 500ms
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _checkThemeChangesLoop();
     });
+  }
+
+  /// Continuously check for theme changes
+  void _checkThemeChangesLoop() async {
+    while (mounted) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) break;
+      await _checkThemeChanges();
+    }
   }
 
   /// Update theme from settings (called externally)

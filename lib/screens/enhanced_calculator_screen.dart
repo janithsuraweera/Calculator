@@ -365,6 +365,183 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     HapticSoundManager.triggerHaptic();
   }
 
+  /// Build quick action bar with Scientific/Basic toggle and Undo/Redo buttons
+  Widget _buildQuickActionBar(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primaryContainer.withValues(alpha: 0.3),
+            colorScheme.surfaceContainerHighest,
+          ],
+        ),
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.primary.withValues(alpha: 0.3),
+            width: 2,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Scientific/Basic Mode Toggle
+          Expanded(child: _buildModeToggleButton(context, localizations)),
+          const SizedBox(width: 12),
+          // Undo Button
+          _buildActionButton(
+            context,
+            icon: Icons.undo,
+            label: localizations.undo,
+            onPressed: _undo,
+            enabled: _undoStack.isNotEmpty,
+          ),
+          const SizedBox(width: 8),
+          // Redo Button
+          _buildActionButton(
+            context,
+            icon: Icons.redo,
+            label: localizations.redo,
+            onPressed: _redo,
+            enabled: _redoStack.isNotEmpty,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build mode toggle button
+  Widget _buildModeToggleButton(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return InkWell(
+      onTap: _toggleScientificMode,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: _isScientificMode
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary,
+                    colorScheme.primary.withValues(alpha: 0.8),
+                  ],
+                )
+              : null,
+          color: _isScientificMode ? null : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isScientificMode
+                ? colorScheme.primary
+                : colorScheme.outline.withValues(alpha: 0.3),
+            width: _isScientificMode ? 2.5 : 1.5,
+          ),
+          boxShadow: _isScientificMode
+              ? [
+                  BoxShadow(
+                    color: colorScheme.primary.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _isScientificMode ? Icons.science : Icons.calculate,
+              color: _isScientificMode
+                  ? colorScheme.onPrimary
+                  : colorScheme.onSurface,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              _isScientificMode
+                  ? localizations.scientificMode
+                  : localizations.basicMode,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: _isScientificMode
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build action button (Undo/Redo)
+  Widget _buildActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+    required bool enabled,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return InkWell(
+      onTap: enabled ? onPressed : null,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: enabled
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.secondaryContainer.withValues(alpha: 0.6),
+                    colorScheme.surfaceContainerHighest,
+                  ],
+                )
+              : null,
+          color: enabled
+              ? null
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: enabled
+                ? colorScheme.secondary.withValues(alpha: 0.5)
+                : colorScheme.outline.withValues(alpha: 0.1),
+            width: enabled ? 1.5 : 1,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: enabled
+              ? colorScheme.onSecondaryContainer
+              : colorScheme.onSurface.withValues(alpha: 0.3),
+          size: 22,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -395,6 +572,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                     result: _result,
                     isError: _isError,
                   ),
+                  // Quick Action Bar - Scientific/Basic toggle, Undo/Redo
+                  _buildQuickActionBar(context, localizations),
                   // Handwriting input overlay
                   if (_showHandwriting)
                     Container(
@@ -767,20 +946,11 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     if (result != null && mounted) {
       await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
       await ThemeManager.setAccentColorIndex(result['accentColorIndex'] as int);
-      // Close dialog and rebuild screen to apply new theme
+      // Close dialog - theme will update automatically via main app's listener
       if (!mounted) return;
-      // The dialog closes automatically, so we just rebuild the screen
-      // Rebuild by replacing the current route
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (!mounted) return;
-        // ignore: use_build_context_synchronously
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const EnhancedCalculatorScreen(),
-          ),
-          (route) => false,
-        );
-      });
+      Navigator.of(context).pop();
+      // Small delay to ensure theme settings are saved
+      // The main app's theme listener will pick up the changes and rebuild
     }
   }
 }
