@@ -23,14 +23,11 @@ class CalculatorEngine {
       ContextModel cm = ContextModel();
 
       // Bind constants - math_expressions uses Number for numeric values
-      // Constants bind කිරීම - math_expressions numeric values සඳහා Number use කරනවා
       cm.bindVariableName('pi', Number(3.141592653589793));
       cm.bindVariableName('e', Number(2.718281828459045));
 
       // Note: math_expressions library handles standard functions automatically
-      // Note: math_expressions library standard functions automatically handle කරනවා
       // Functions like sin, cos, tan, log, ln, sqrt, exp are built-in
-      // Functions sin, cos, tan, log, ln, sqrt, exp built-in වනවා
 
       // Parse the expression
       Expression exp = p.parse(processed);
@@ -39,7 +36,6 @@ class CalculatorEngine {
       double result = exp.evaluate(EvaluationType.REAL, cm);
 
       // Format result - remove trailing zeros and unnecessary decimal point
-      // Result format කිරීම - trailing zeros සහ අවශ්‍ය නැති decimal points ඉවත් කිරීම
       if (result == result.toInt()) {
         return result.toInt().toString();
       } else {
@@ -57,18 +53,14 @@ class CalculatorEngine {
   }
 
   /// Process scientific functions in expression
-  /// Expression එකේ විද්‍යාත්මක functions process කිරීම
   static String _processScientificFunctions(String expression) {
     // For now, we'll let math_expressions handle function parsing
-    // දැනට, math_expressions function parsing handle කරන්නට දෙමු
     // The functions will be bound in the ContextModel
-    // Functions ContextModel එකේ bind වෙනවා
 
     return expression;
   }
 
   /// Validate if expression can be evaluated
-  /// Expression එක evaluate කළ හැකිදැයි validate කිරීම
   static bool isValid(String expression) {
     if (expression.isEmpty) return false;
     try {
@@ -89,14 +81,12 @@ class CalculatorEngine {
   }
 
   /// Evaluate scientific function
-  /// විද්‍යාත්මක functions evaluate කිරීම
   static String? evaluateScientific(String function, String value) {
     try {
       double numValue = double.parse(value);
       double result;
 
       // Convert degrees to radians for trigonometric functions
-      // Trigonometric functions සඳහා degrees radians වලට convert කිරීම
       double radians = numValue * (3.141592653589793 / 180);
 
       switch (function.toLowerCase()) {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Calculator button widget with haptic feedback
-/// Haptic feedback සහිත calculator button widget එක
 class CalculatorButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -79,7 +78,9 @@ class CalculatorButton extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                   fontSize: fontSize,
                 ),
-                textScaleFactor: 1.0, // Prevent system font scaling
+                textScaler: const TextScaler.linear(
+                  1.0,
+                ), // Prevent system font scaling
               ),
             ),
           ),

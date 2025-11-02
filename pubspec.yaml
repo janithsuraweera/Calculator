@@ -38,6 +38,7 @@ dependencies:
   
   # Package info for version
   package_info_plus: ^8.0.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

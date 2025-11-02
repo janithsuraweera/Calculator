@@ -39,6 +39,36 @@ class _CalculatorAppState extends State<CalculatorApp> {
   void initState() {
     super.initState();
     _loadThemeSettings();
+    // Listen for theme changes from settings
+    _setupThemeListener();
+  }
+
+  /// Setup listener for theme changes
+  void _setupThemeListener() {
+    // Check for theme changes periodically
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _checkThemeChanges();
+    });
+  }
+
+  /// Update theme from settings (called externally)
+  void updateTheme() {
+    _loadThemeSettings();
+  }
+
+  /// Check and update theme if changed
+  Future<void> _checkThemeChanges() async {
+    final newThemeMode = await ThemeManager.getThemeMode();
+    final newAccentColorIndex = await ThemeManager.getAccentColorIndex();
+
+    if (mounted &&
+        (newThemeMode != _themeMode ||
+            newAccentColorIndex != _accentColorIndex)) {
+      setState(() {
+        _themeMode = newThemeMode;
+        _accentColorIndex = newAccentColorIndex;
+      });
+    }
   }
 
   /// Load theme settings from storage
@@ -70,7 +100,12 @@ class _CalculatorAppState extends State<CalculatorApp> {
     }
 
     final accentColor = ThemeManager.getAccentColor(_accentColorIndex);
-    final themeData = ThemeManager.buildThemeData(_themeMode, accentColor);
+
+    final lightTheme = ThemeManager.buildThemeData(
+      ThemeMode.light,
+      accentColor,
+    );
+    final darkTheme = ThemeManager.buildThemeData(ThemeMode.dark, accentColor);
 
     return MaterialApp(
       title: 'Calculator',
@@ -86,9 +121,9 @@ class _CalculatorAppState extends State<CalculatorApp> {
         Locale('si', ''), // Sinhala
       ],
       // Set default locale
-      locale: const Locale('si', ''), // Default to Sinhala
-      theme: themeData,
-      darkTheme: themeData,
+      locale: const Locale('en', ''), // Default to English
+      theme: lightTheme,
+      darkTheme: darkTheme,
       themeMode: _themeMode,
       home: _showSplash
           ? SplashScreen(onFinish: _onSplashFinish)

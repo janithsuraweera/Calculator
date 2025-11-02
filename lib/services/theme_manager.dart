@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Theme manager for handling light/dark themes and accent colors
-/// Light/dark themes සහ accent colors handle කිරීම සඳහා theme manager එක
 class ThemeManager {
   static const String _themeKey = 'theme_mode';
   static const String _accentColorKey = 'accent_color';
@@ -10,7 +9,6 @@ class ThemeManager {
   static const String _darkTheme = 'dark';
 
   /// Available accent colors
-  /// භාවිතා කළ හැකි accent colors
   static final List<Color> accentColors = [
     Colors.blue,
     Colors.green,
@@ -25,7 +23,6 @@ class ThemeManager {
   ];
 
   /// Get current theme mode
-  /// දැනට active theme mode එක retrieve කිරීම
   static Future<ThemeMode> getThemeMode() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -37,7 +34,6 @@ class ThemeManager {
   }
 
   /// Set theme mode
-  /// Theme mode එක set කිරීම
   static Future<void> setThemeMode(ThemeMode mode) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -49,7 +45,6 @@ class ThemeManager {
   }
 
   /// Get current accent color index
-  /// දැනට active accent color index එක retrieve කිරීම
   static Future<int> getAccentColorIndex() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -60,7 +55,6 @@ class ThemeManager {
   }
 
   /// Set accent color index
-  /// Accent color index එක set කිරීම
   static Future<void> setAccentColorIndex(int index) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -73,7 +67,6 @@ class ThemeManager {
   }
 
   /// Get accent color by index
-  /// Index එකෙන් accent color එක retrieve කිරීම
   static Color getAccentColor(int index) {
     if (index >= 0 && index < accentColors.length) {
       return accentColors[index];
@@ -82,7 +75,6 @@ class ThemeManager {
   }
 
   /// Build theme data
-  /// Theme data build කිරීම
   static ThemeData buildThemeData(ThemeMode mode, Color accentColor) {
     final brightness = mode == ThemeMode.dark
         ? Brightness.dark

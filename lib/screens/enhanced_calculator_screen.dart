@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import 'about_screen.dart';
 import '../widgets/calculator_display.dart';
 import '../widgets/calculator_keypad.dart';
 import '../widgets/history_panel.dart';
@@ -533,6 +534,12 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
             case 'settings':
               _showSettings(context, localizations);
               break;
+            case 'about':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AboutScreen()),
+              );
+              break;
           }
         },
         itemBuilder: (context) => [
@@ -623,6 +630,16 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
               ],
             ),
           ),
+          PopupMenuItem(
+            value: 'about',
+            child: Row(
+              children: [
+                const Icon(Icons.info, size: 20),
+                const SizedBox(width: 8),
+                const Text('About & Help'),
+              ],
+            ),
+          ),
         ],
       ),
     ];
@@ -696,6 +713,17 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         onPressed: () => _showSettings(context, localizations),
         tooltip: localizations.settings,
       ),
+      // About & Help
+      IconButton(
+        icon: const Icon(Icons.info),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AboutScreen()),
+          );
+        },
+        tooltip: 'About & Help',
+      ),
     ];
   }
 
@@ -739,6 +767,20 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     if (result != null && mounted) {
       await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
       await ThemeManager.setAccentColorIndex(result['accentColorIndex'] as int);
+      // Close dialog and rebuild screen to apply new theme
+      if (!mounted) return;
+      // The dialog closes automatically, so we just rebuild the screen
+      // Rebuild by replacing the current route
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!mounted) return;
+        // ignore: use_build_context_synchronously
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const EnhancedCalculatorScreen(),
+          ),
+          (route) => false,
+        );
+      });
     }
   }
 }

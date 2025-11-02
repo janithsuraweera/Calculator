@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'calculator_button.dart';
 
 /// Calculator keypad widget with basic and scientific modes
-/// Basic සහ scientific modes සහිත calculator keypad widget එක
 class CalculatorKeypad extends StatelessWidget {
   final bool isScientificMode;
   final Function(String) onButtonPressed;

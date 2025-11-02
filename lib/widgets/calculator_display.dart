@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 /// Calculator display widget
-/// Calculator display widget එක
 class CalculatorDisplay extends StatelessWidget {
   final String expression;
   final String result;
@@ -63,7 +62,9 @@ class CalculatorDisplay extends StatelessWidget {
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                textScaleFactor: 1.0, // Prevent system font scaling
+                textScaler: const TextScaler.linear(
+                  1.0,
+                ), // Prevent system font scaling
               ),
             ),
           // Result display
@@ -76,7 +77,9 @@ class CalculatorDisplay extends StatelessWidget {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            textScaleFactor: 1.0, // Prevent system font scaling
+            textScaler: const TextScaler.linear(
+              1.0,
+            ), // Prevent system font scaling
           ),
         ],
       ),

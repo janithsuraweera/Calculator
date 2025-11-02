@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/calculation_history.dart';
 
 /// History panel widget showing calculation history
-/// ගණනය කිරීමේ ඉතිහාසය පෙන්වන history panel widget එක
+/// History panel widget for displaying calculation history
 class HistoryPanel extends StatelessWidget {
   final List<CalculationHistory> history;
   final Function(String) onHistoryItemTap;
