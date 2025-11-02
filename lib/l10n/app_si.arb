@@ -1,0 +1,22 @@
+{
+  "@@locale": "si",
+  "appTitle": "ගණකය",
+  "display": "සංදර්ශකය",
+  "clear": "C",
+  "allClear": "AC",
+  "basicMode": "මූලික",
+  "scientificMode": "විද්‍යාත්මක",
+  "history": "ඉතිහාසය",
+  "settings": "සැකසීම්",
+  "theme": "තේමාව",
+  "lightTheme": "දීප්තිමත්",
+  "darkTheme": "අඳුරු",
+  "accentColor": "වර්ණය",
+  "language": "භාෂාව",
+  "noHistory": "ගණනය කිරීමේ ඉතිහාසයක් නොමැත",
+  "clearHistory": "ඉතිහාසය මකන්න",
+  "error": "දෝෂය",
+  "undo": "අපසාරය",
+  "redo": "නැවත කරන්න"
+}
+

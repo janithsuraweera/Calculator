@@ -1,0 +1,76 @@
+{
+  "@@locale": "en",
+  "appTitle": "Calculator",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "display": "Display",
+  "@display": {
+    "description": "Calculator display"
+  },
+  "clear": "C",
+  "@clear": {
+    "description": "Clear button"
+  },
+  "allClear": "AC",
+  "@allClear": {
+    "description": "All clear button"
+  },
+  "basicMode": "Basic",
+  "@basicMode": {
+    "description": "Basic calculator mode"
+  },
+  "scientificMode": "Scientific",
+  "@scientificMode": {
+    "description": "Scientific calculator mode"
+  },
+  "history": "History",
+  "@history": {
+    "description": "Calculation history"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme settings"
+  },
+  "lightTheme": "Light",
+  "@lightTheme": {
+    "description": "Light theme"
+  },
+  "darkTheme": "Dark",
+  "@darkTheme": {
+    "description": "Dark theme"
+  },
+  "accentColor": "Accent Color",
+  "@accentColor": {
+    "description": "Accent color selection"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language selection"
+  },
+  "noHistory": "No calculation history",
+  "@noHistory": {
+    "description": "Message when history is empty"
+  },
+  "clearHistory": "Clear History",
+  "@clearHistory": {
+    "description": "Clear history button"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error message"
+  },
+  "undo": "Undo",
+  "@undo": {
+    "description": "Undo button"
+  },
+  "redo": "Redo",
+  "@redo": {
+    "description": "Redo button"
+  }
+}
+
