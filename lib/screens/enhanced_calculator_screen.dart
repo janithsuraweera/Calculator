@@ -10,6 +10,7 @@ import '../widgets/enhanced_settings_dialog.dart';
 import '../widgets/handwriting_input.dart';
 import '../widgets/step_by_step_view.dart';
 import '../widgets/ar_camera_view.dart';
+import '../widgets/unit_converter_dialog.dart';
 import '../services/calculator_engine.dart';
 import '../services/history_manager.dart';
 import '../services/theme_manager.dart';
@@ -685,6 +686,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                           CalculatorKeypad(
                             isScientificMode: _isScientificMode,
                             onButtonPressed: _onButtonPressed,
+                            onUnitConverterPressed: _showUnitConverter,
                           ),
                           // History tab
                           HistoryPanel(
@@ -929,6 +931,18 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         _evaluateExpression();
       });
     }
+  }
+
+  /// Show unit converter dialog
+  void _showUnitConverter(String category) {
+    final value = double.tryParse(
+      _result == '0' || _result == 'Error' ? '' : _result,
+    );
+    showDialog(
+      context: context,
+      builder: (context) =>
+          UnitConverterDialog(category: category, initialValue: value),
+    );
   }
 
   /// Show settings dialog

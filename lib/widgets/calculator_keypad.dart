@@ -5,11 +5,13 @@ import 'calculator_button.dart';
 class CalculatorKeypad extends StatelessWidget {
   final bool isScientificMode;
   final Function(String) onButtonPressed;
+  final Function(String)? onUnitConverterPressed;
 
   const CalculatorKeypad({
     super.key,
     required this.isScientificMode,
     required this.onButtonPressed,
+    this.onUnitConverterPressed,
   });
 
   @override
@@ -44,6 +46,9 @@ class CalculatorKeypad extends StatelessWidget {
           _buildBasicRow4(context),
           SizedBox(height: rowSpacing),
           _buildBasicRow5(context),
+          // Unit converter row (available in both modes)
+          SizedBox(height: rowSpacing),
+          _buildUnitConverterRow(context),
         ],
       ),
     );
@@ -53,6 +58,69 @@ class CalculatorKeypad extends StatelessWidget {
       return SingleChildScrollView(child: keypadContent);
     }
     return keypadContent;
+  }
+
+  // Unit converter row - compact version
+  Widget _buildUnitConverterRow(BuildContext context) {
+    if (onUnitConverterPressed == null) {
+      return const SizedBox.shrink();
+    }
+
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final buttonWidth = (screenWidth - 32 - 20) / 6; // 6 buttons with padding
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      alignment: WrapAlignment.center,
+      children: [
+        _buildUnitButton('Length', 'length', Colors.blue, buttonWidth),
+        _buildUnitButton('Area', 'area', Colors.green, buttonWidth),
+        _buildUnitButton('Volume', 'volume', Colors.orange, buttonWidth),
+        _buildUnitButton('Time', 'time', Colors.purple, buttonWidth),
+        _buildUnitButton('Temp', 'temperature', Colors.red, buttonWidth),
+        _buildUnitButton('Weight', 'weight', Colors.indigo, buttonWidth),
+      ],
+    );
+  }
+
+  // Build unit converter button (not using Expanded)
+  Widget _buildUnitButton(
+    String label,
+    String category,
+    Color color,
+    double width,
+  ) {
+    return SizedBox(
+      width: width,
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Material(
+          color: color.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(12),
+          elevation: 0,
+          child: InkWell(
+            onTap: () => onUnitConverterPressed!(category),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              height: 48,
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+                textScaler: const TextScaler.linear(1.0),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // Scientific functions row 1
