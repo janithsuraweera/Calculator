@@ -367,6 +367,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
 
     return GestureDetector(
       onPanStart: _handleSwipeStart,
@@ -375,204 +378,367 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Calculator'),
-          actions: [
-            // Handwriting mode
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                setState(() {
-                  _showHandwriting = !_showHandwriting;
-                });
-              },
-              tooltip: 'Handwriting Input',
-            ),
-            // Step-by-step mode
-            IconButton(
-              icon: const Icon(Icons.info_outline),
-              onPressed: () {
-                setState(() {
-                  _showStepByStep = !_showStepByStep;
-                });
-              },
-              tooltip: 'Step-by-Step',
-            ),
-            // AR mode
-            IconButton(
-              icon: const Icon(Icons.camera_alt),
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ARCameraView(onExpressionRecognized: (expr) {}),
-                  ),
-                );
-                if (result != null && result is String) {
-                  setState(() {
-                    _expression = result;
-                    _evaluateExpression();
-                  });
-                }
-              },
-              tooltip: 'AR Mode',
-            ),
-            // Floating calculator
-            IconButton(
-              icon: const Icon(Icons.open_in_new),
-              onPressed: () {
-                setState(() {
-                  _showFloating = !_showFloating;
-                });
-              },
-              tooltip: 'Floating Calculator',
-            ),
-            // Mode toggle
-            IconButton(
-              icon: Icon(_isScientificMode ? Icons.calculate : Icons.science),
-              onPressed: _toggleScientificMode,
-              tooltip: _isScientificMode
-                  ? localizations.basicMode
-                  : localizations.scientificMode,
-            ),
-            // Undo
-            IconButton(
-              icon: const Icon(Icons.undo),
-              onPressed: _undo,
-              tooltip: localizations.undo,
-            ),
-            // Redo
-            IconButton(
-              icon: const Icon(Icons.redo),
-              onPressed: _redo,
-              tooltip: localizations.redo,
-            ),
-            // Settings
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () async {
-                if (!mounted) return;
-
-                final currentTheme =
-                    Theme.of(context).brightness == Brightness.dark
-                    ? ThemeMode.dark
-                    : ThemeMode.light;
-                final currentAccentColorIndex =
-                    await ThemeManager.getAccentColorIndex();
-
-                if (!mounted) return;
-                final result = await showDialog<Map<String, dynamic>>(
-                  // ignore: use_build_context_synchronously
-                  context: context,
-                  builder: (context) => EnhancedSettingsDialog(
-                    currentTheme: currentTheme,
-                    currentAccentColorIndex: currentAccentColorIndex,
-                  ),
-                );
-
-                if (result != null && mounted) {
-                  await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
-                  await ThemeManager.setAccentColorIndex(
-                    result['accentColorIndex'] as int,
-                  );
-                  // Theme will be updated by the parent widget
-                }
-              },
-              tooltip: localizations.settings,
-            ),
-          ],
+          // Hide some actions on smaller screens to save space
+          actions: screenWidth < 600
+              ? _buildCompactAppBarActions(context, localizations)
+              : _buildFullAppBarActions(context, localizations),
         ),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                // Display
-                CalculatorDisplay(
-                  expression: _expression,
-                  result: _result,
-                  isError: _isError,
-                ),
-                // Handwriting input overlay
-                if (_showHandwriting)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    child: HandwritingInput(
-                      onExpressionRecognized: (expr) {
-                        setState(() {
-                          _expression = expr;
-                          _evaluateExpression();
-                          _showHandwriting = false;
-                        });
-                      },
-                    ),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  // Display
+                  CalculatorDisplay(
+                    expression: _expression,
+                    result: _result,
+                    isError: _isError,
                   ),
-                // Step-by-step view
-                if (_showStepByStep && _expression.isNotEmpty)
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: StepByStepView(expression: _expression),
-                    ),
-                  ),
-                // Tabs
-                if (!_showStepByStep)
-                  TabBar(
-                    controller: _tabController,
-                    tabs: [
-                      Tab(
-                        icon: const Icon(Icons.calculate),
-                        text: localizations.display,
+                  // Handwriting input overlay
+                  if (_showHandwriting)
+                    Container(
+                      padding: EdgeInsets.all(screenWidth < 360 ? 12 : 16),
+                      child: HandwritingInput(
+                        onExpressionRecognized: (expr) {
+                          setState(() {
+                            _expression = expr;
+                            _evaluateExpression();
+                            _showHandwriting = false;
+                          });
+                        },
                       ),
-                      Tab(
-                        icon: const Icon(Icons.history),
-                        text: localizations.history,
+                    ),
+                  // Step-by-step view
+                  if (_showStepByStep && _expression.isNotEmpty)
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(screenWidth < 360 ? 12 : 16),
+                        child: StepByStepView(expression: _expression),
                       ),
-                      Tab(icon: const Icon(Icons.lock), text: 'Vault'),
-                    ],
-                  ),
-                // Tab content
-                if (!_showStepByStep)
-                  Expanded(
-                    child: IndexedStack(
-                      index: _selectedTabIndex,
-                      children: [
-                        // Calculator tab
-                        CalculatorKeypad(
-                          isScientificMode: _isScientificMode,
-                          onButtonPressed: _onButtonPressed,
+                    ),
+                  // Tabs
+                  if (!_showStepByStep)
+                    TabBar(
+                      controller: _tabController,
+                      tabs: [
+                        Tab(
+                          icon: const Icon(Icons.calculate),
+                          text: screenWidth < 360
+                              ? null
+                              : localizations.display,
                         ),
-                        // History tab
-                        HistoryPanel(
-                          history: _history,
-                          onHistoryItemTap: _onHistoryItemTap,
-                          onClearHistory: _clearHistory,
+                        Tab(
+                          icon: const Icon(Icons.history),
+                          text: screenWidth < 360
+                              ? null
+                              : localizations.history,
                         ),
-                        // Vault tab
-                        FutureBuilder<List<CalculationHistory>>(
-                          future: VaultManager.getVaultEntries(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                              return HistoryPanel(
-                                history: snapshot.data!,
-                                onHistoryItemTap: _onHistoryItemTap,
-                                onClearHistory: () async {
-                                  await VaultManager.clearVault();
-                                },
-                              );
-                            }
-                            return Center(child: Text('Vault is empty'));
-                          },
+                        Tab(
+                          icon: const Icon(Icons.lock),
+                          text: screenWidth < 360 ? null : 'Vault',
                         ),
                       ],
                     ),
-                  ),
-              ],
-            ),
-            // Floating calculator overlay
-            if (_showFloating)
-              Positioned(top: 100, right: 20, child: FloatingCalculator()),
-          ],
+                  // Tab content
+                  if (!_showStepByStep)
+                    Expanded(
+                      child: IndexedStack(
+                        index: _selectedTabIndex,
+                        children: [
+                          // Calculator tab
+                          CalculatorKeypad(
+                            isScientificMode: _isScientificMode,
+                            onButtonPressed: _onButtonPressed,
+                          ),
+                          // History tab
+                          HistoryPanel(
+                            history: _history,
+                            onHistoryItemTap: _onHistoryItemTap,
+                            onClearHistory: _clearHistory,
+                          ),
+                          // Vault tab
+                          FutureBuilder<List<CalculationHistory>>(
+                            future: VaultManager.getVaultEntries(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData &&
+                                  snapshot.data!.isNotEmpty) {
+                                return HistoryPanel(
+                                  history: snapshot.data!,
+                                  onHistoryItemTap: _onHistoryItemTap,
+                                  onClearHistory: () async {
+                                    await VaultManager.clearVault();
+                                  },
+                                );
+                              }
+                              return Center(child: Text('Vault is empty'));
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              // Floating calculator overlay
+              if (_showFloating)
+                Positioned(
+                  top: screenHeight < 700 ? 80 : 100,
+                  right: screenWidth < 360 ? 10 : 20,
+                  child: FloatingCalculator(),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// Build compact app bar actions for smaller screens
+  List<Widget> _buildCompactAppBarActions(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    return [
+      PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert),
+        tooltip: 'More',
+        onSelected: (value) {
+          switch (value) {
+            case 'handwriting':
+              setState(() {
+                _showHandwriting = !_showHandwriting;
+              });
+              break;
+            case 'step':
+              setState(() {
+                _showStepByStep = !_showStepByStep;
+              });
+              break;
+            case 'ar':
+              _showARMode(context);
+              break;
+            case 'floating':
+              setState(() {
+                _showFloating = !_showFloating;
+              });
+              break;
+            case 'mode':
+              _toggleScientificMode();
+              break;
+            case 'undo':
+              _undo();
+              break;
+            case 'redo':
+              _redo();
+              break;
+            case 'settings':
+              _showSettings(context, localizations);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'handwriting',
+            child: Row(
+              children: [
+                const Icon(Icons.edit, size: 20),
+                const SizedBox(width: 8),
+                const Text('Handwriting'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'step',
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 20),
+                const SizedBox(width: 8),
+                const Text('Step-by-Step'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'ar',
+            child: Row(
+              children: [
+                const Icon(Icons.camera_alt, size: 20),
+                const SizedBox(width: 8),
+                const Text('AR Mode'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'floating',
+            child: Row(
+              children: [
+                const Icon(Icons.open_in_new, size: 20),
+                const SizedBox(width: 8),
+                const Text('Floating'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'mode',
+            child: Row(
+              children: [
+                Icon(
+                  _isScientificMode ? Icons.calculate : Icons.science,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isScientificMode
+                      ? localizations.basicMode
+                      : localizations.scientificMode,
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'undo',
+            child: Row(
+              children: [
+                const Icon(Icons.undo, size: 20),
+                const SizedBox(width: 8),
+                Text(localizations.undo),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'redo',
+            child: Row(
+              children: [
+                const Icon(Icons.redo, size: 20),
+                const SizedBox(width: 8),
+                Text(localizations.redo),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'settings',
+            child: Row(
+              children: [
+                const Icon(Icons.settings, size: 20),
+                const SizedBox(width: 8),
+                Text(localizations.settings),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// Build full app bar actions for larger screens
+  List<Widget> _buildFullAppBarActions(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) {
+    return [
+      // Handwriting mode
+      IconButton(
+        icon: const Icon(Icons.edit),
+        onPressed: () {
+          setState(() {
+            _showHandwriting = !_showHandwriting;
+          });
+        },
+        tooltip: 'Handwriting Input',
+      ),
+      // Step-by-step mode
+      IconButton(
+        icon: const Icon(Icons.info_outline),
+        onPressed: () {
+          setState(() {
+            _showStepByStep = !_showStepByStep;
+          });
+        },
+        tooltip: 'Step-by-Step',
+      ),
+      // AR mode
+      IconButton(
+        icon: const Icon(Icons.camera_alt),
+        onPressed: () => _showARMode(context),
+        tooltip: 'AR Mode',
+      ),
+      // Floating calculator
+      IconButton(
+        icon: const Icon(Icons.open_in_new),
+        onPressed: () {
+          setState(() {
+            _showFloating = !_showFloating;
+          });
+        },
+        tooltip: 'Floating Calculator',
+      ),
+      // Mode toggle
+      IconButton(
+        icon: Icon(_isScientificMode ? Icons.calculate : Icons.science),
+        onPressed: _toggleScientificMode,
+        tooltip: _isScientificMode
+            ? localizations.basicMode
+            : localizations.scientificMode,
+      ),
+      // Undo
+      IconButton(
+        icon: const Icon(Icons.undo),
+        onPressed: _undo,
+        tooltip: localizations.undo,
+      ),
+      // Redo
+      IconButton(
+        icon: const Icon(Icons.redo),
+        onPressed: _redo,
+        tooltip: localizations.redo,
+      ),
+      // Settings
+      IconButton(
+        icon: const Icon(Icons.settings),
+        onPressed: () => _showSettings(context, localizations),
+        tooltip: localizations.settings,
+      ),
+    ];
+  }
+
+  /// Show AR mode
+  Future<void> _showARMode(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ARCameraView(onExpressionRecognized: (expr) {}),
+      ),
+    );
+    if (result != null && result is String && mounted) {
+      setState(() {
+        _expression = result;
+        _evaluateExpression();
+      });
+    }
+  }
+
+  /// Show settings dialog
+  Future<void> _showSettings(
+    BuildContext context,
+    AppLocalizations localizations,
+  ) async {
+    if (!mounted) return;
+
+    final currentTheme = Theme.of(context).brightness == Brightness.dark
+        ? ThemeMode.dark
+        : ThemeMode.light;
+    final currentAccentColorIndex = await ThemeManager.getAccentColorIndex();
+
+    if (!mounted) return;
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => EnhancedSettingsDialog(
+        currentTheme: currentTheme,
+        currentAccentColorIndex: currentAccentColorIndex,
+      ),
+    );
+
+    if (result != null && mounted) {
+      await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
+      await ThemeManager.setAccentColorIndex(result['accentColorIndex'] as int);
+    }
   }
 }

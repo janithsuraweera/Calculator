@@ -15,23 +15,33 @@ class CalculatorKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+
+    // Responsive padding and spacing
+    final double padding = screenWidth < 360 ? 6.0 : 8.0;
+    final double rowSpacing = screenWidth < 360 ? 6.0 : 8.0;
+
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: EdgeInsets.all(padding),
       child: Column(
         children: [
           // Scientific functions row (shown only in scientific mode)
-          // විද්‍යාත්මක functions row (scientific mode එකේදී පමණක් පෙන්වනවා)
           if (isScientificMode) ...[
             _buildScientificRow1(context),
+            SizedBox(height: rowSpacing),
             _buildScientificRow2(context),
-            const SizedBox(height: 8),
+            SizedBox(height: rowSpacing),
           ],
           // Basic calculator rows
-          // මූලික calculator rows
           _buildBasicRow1(context),
+          SizedBox(height: rowSpacing),
           _buildBasicRow2(context),
+          SizedBox(height: rowSpacing),
           _buildBasicRow3(context),
+          SizedBox(height: rowSpacing),
           _buildBasicRow4(context),
+          SizedBox(height: rowSpacing),
           _buildBasicRow5(context),
         ],
       ),

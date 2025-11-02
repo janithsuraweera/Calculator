@@ -25,9 +25,21 @@ class CalculatorButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+
+    // Responsive sizing
+    // Smaller screens get smaller buttons
+    final double buttonPadding = screenWidth < 360 ? 3.0 : 4.0;
+    final double buttonHeight = screenWidth < 360
+        ? 56.0
+        : (screenWidth < 600 ? 60.0 : 64.0);
+    final double fontSize = screenWidth < 360
+        ? 20.0
+        : (screenWidth < 600 ? 22.0 : 24.0);
+    final double borderRadius = screenWidth < 360 ? 10.0 : 12.0;
 
     // Default colors based on button type
-    // Button type එක අනුව default colors
     final Color bgColor =
         backgroundColor ??
         (label == '='
@@ -40,35 +52,34 @@ class CalculatorButton extends StatelessWidget {
     return Expanded(
       flex: isLarge ? 2 : 1,
       child: Padding(
-        padding: const EdgeInsets.all(4.0),
+        padding: EdgeInsets.all(buttonPadding),
         child: Material(
           color: bgColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(borderRadius),
           elevation: 0,
           child: InkWell(
             onTap: () {
               // Haptic feedback on tap
-              // Tap කිරීමේදී haptic feedback
               HapticFeedback.lightImpact();
               onTap?.call();
             },
             onLongPress: () {
               // Haptic feedback on long press
-              // Long press කිරීමේදී haptic feedback
               HapticFeedback.mediumImpact();
               onLongPress?.call();
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(borderRadius),
             child: Container(
-              height: 64,
+              height: buttonHeight,
               alignment: Alignment.center,
               child: Text(
                 label,
                 style: theme.textTheme.titleLarge?.copyWith(
                   color: txtColor,
                   fontWeight: FontWeight.w500,
-                  fontSize: 24,
+                  fontSize: fontSize,
                 ),
+                textScaleFactor: 1.0, // Prevent system font scaling
               ),
             ),
           ),
