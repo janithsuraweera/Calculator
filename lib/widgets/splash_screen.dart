@@ -99,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
               // App Name
               Text(
-                'Calculator',
+                'SMARTCALC',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,

@@ -54,7 +54,7 @@ class _CalculatorAppState extends State<CalculatorApp> {
   /// Continuously check for theme changes
   void _checkThemeChangesLoop() async {
     while (mounted) {
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future.delayed(const Duration(milliseconds: 500));
       if (!mounted) break;
       await _checkThemeChanges();
     }
@@ -117,7 +117,7 @@ class _CalculatorAppState extends State<CalculatorApp> {
     final darkTheme = ThemeManager.buildThemeData(ThemeMode.dark, accentColor);
 
     return MaterialApp(
-      title: 'Calculator',
+      title: 'SMARTCALC',
       // Enable localization
       localizationsDelegates: const [
         AppLocalizations.delegate,

@@ -11,12 +11,14 @@ class HandwritingInput extends StatefulWidget {
 }
 
 class _HandwritingInputState extends State<HandwritingInput> {
-  final List<Offset> _points = <Offset>[];
+  final List<List<Offset>> _strokes = <List<Offset>>[];
+  List<Offset> _currentStroke = <Offset>[];
 
   /// Clear the drawing
   void clear() {
     setState(() {
-      _points.clear();
+      _strokes.clear();
+      _currentStroke.clear();
     });
   }
 
@@ -24,7 +26,7 @@ class _HandwritingInputState extends State<HandwritingInput> {
   Future<void> recognize() async {
     // Simplified recognition - in production, use ML Kit or similar
     // This is a placeholder that converts drawn strokes to text
-    if (_points.isEmpty) return;
+    if (_strokes.isEmpty && _currentStroke.isEmpty) return;
 
     // For now, return a placeholder
     // In a real implementation, this would use handwriting recognition
@@ -45,18 +47,26 @@ class _HandwritingInputState extends State<HandwritingInput> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: GestureDetector(
+            onPanStart: (details) {
+              setState(() {
+                _currentStroke = [details.localPosition];
+              });
+            },
             onPanUpdate: (details) {
               setState(() {
-                _points.add(details.localPosition);
+                _currentStroke.add(details.localPosition);
               });
             },
             onPanEnd: (details) {
               setState(() {
-                _points.add(Offset.zero); // Mark end of stroke
+                if (_currentStroke.isNotEmpty) {
+                  _strokes.add(List.from(_currentStroke));
+                  _currentStroke.clear();
+                }
               });
             },
             child: CustomPaint(
-              painter: HandwritingPainter(_points),
+              painter: HandwritingPainter(_strokes, _currentStroke),
               child: Container(),
             ),
           ),
@@ -85,26 +95,38 @@ class _HandwritingInputState extends State<HandwritingInput> {
 
 /// Custom painter for handwriting strokes
 class HandwritingPainter extends CustomPainter {
-  final List<Offset> points;
+  final List<List<Offset>> strokes;
+  final List<Offset> currentStroke;
 
-  HandwritingPainter(this.points);
+  HandwritingPainter(this.strokes, this.currentStroke);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = Colors.black
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
 
-    for (int i = 0; i < points.length - 1; i++) {
-      if (points[i] != Offset.zero && points[i + 1] != Offset.zero) {
-        canvas.drawLine(points[i], points[i + 1], paint);
+    // Draw all completed strokes
+    for (final stroke in strokes) {
+      if (stroke.length < 2) continue;
+      for (int i = 0; i < stroke.length - 1; i++) {
+        canvas.drawLine(stroke[i], stroke[i + 1], paint);
+      }
+    }
+
+    // Draw current stroke being drawn
+    if (currentStroke.length >= 2) {
+      for (int i = 0; i < currentStroke.length - 1; i++) {
+        canvas.drawLine(currentStroke[i], currentStroke[i + 1], paint);
       }
     }
   }
 
   @override
   bool shouldRepaint(HandwritingPainter oldDelegate) {
-    return oldDelegate.points != points;
+    return oldDelegate.strokes.length != strokes.length ||
+        oldDelegate.currentStroke.length != currentStroke.length;
   }
 }

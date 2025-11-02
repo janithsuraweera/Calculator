@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import 'about_screen.dart';
+import '../widgets/currency_converter_dialog.dart';
 import '../widgets/calculator_display.dart';
 import '../widgets/calculator_keypad.dart';
 import '../widgets/history_panel.dart';
 import '../widgets/enhanced_settings_dialog.dart';
 import '../widgets/handwriting_input.dart';
 import '../widgets/step_by_step_view.dart';
-import '../widgets/floating_calculator.dart';
 import '../widgets/ar_camera_view.dart';
 import '../services/calculator_engine.dart';
 import '../services/history_manager.dart';
@@ -34,7 +35,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   bool _isError = false;
   bool _showHandwriting = false;
   bool _showStepByStep = false;
-  bool _showFloating = false;
 
   // Undo/Redo stacks
   final List<String> _undoStack = [];
@@ -64,6 +64,13 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    // Reset orientation lock when disposing
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     super.dispose();
   }
 
@@ -361,6 +368,21 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   void _toggleScientificMode() {
     setState(() {
       _isScientificMode = !_isScientificMode;
+      // Auto-rotate to landscape when scientific mode is enabled
+      if (_isScientificMode) {
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ]);
+      } else {
+        // Lock to portrait when basic mode
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ]);
+      }
     });
     HapticSoundManager.triggerHaptic();
   }
@@ -374,45 +396,56 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colorScheme.primaryContainer.withValues(alpha: 0.3),
+            colorScheme.primaryContainer.withValues(alpha: 0.5),
             colorScheme.surfaceContainerHighest,
           ],
         ),
         border: Border(
           bottom: BorderSide(
-            color: colorScheme.primary.withValues(alpha: 0.3),
-            width: 2,
+            color: colorScheme.primary.withValues(alpha: 0.4),
+            width: 2.5,
           ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           // Scientific/Basic Mode Toggle
           Expanded(child: _buildModeToggleButton(context, localizations)),
-          const SizedBox(width: 12),
-          // Undo Button
-          _buildActionButton(
-            context,
-            icon: Icons.undo,
-            label: localizations.undo,
-            onPressed: _undo,
-            enabled: _undoStack.isNotEmpty,
+          const SizedBox(width: 16),
+          // Undo Button - Prominent
+          Expanded(
+            child: _buildActionButton(
+              context,
+              icon: Icons.undo,
+              label: localizations.undo,
+              onPressed: _undo,
+              enabled: _undoStack.isNotEmpty,
+            ),
           ),
-          const SizedBox(width: 8),
-          // Redo Button
-          _buildActionButton(
-            context,
-            icon: Icons.redo,
-            label: localizations.redo,
-            onPressed: _redo,
-            enabled: _redoStack.isNotEmpty,
+          const SizedBox(width: 12),
+          // Redo Button - Prominent
+          Expanded(
+            child: _buildActionButton(
+              context,
+              icon: Icons.redo,
+              label: localizations.redo,
+              onPressed: _redo,
+              enabled: _redoStack.isNotEmpty,
+            ),
           ),
         ],
       ),
@@ -492,7 +525,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     );
   }
 
-  /// Build action button (Undo/Redo)
+  /// Build action button (Undo/Redo) - Enhanced for better visibility
   Widget _buildActionButton(
     BuildContext context, {
     required IconData icon,
@@ -505,38 +538,62 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
     return InkWell(
       onTap: enabled ? onPressed : null,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           gradient: enabled
               ? LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    colorScheme.secondaryContainer.withValues(alpha: 0.6),
-                    colorScheme.surfaceContainerHighest,
+                    colorScheme.secondaryContainer,
+                    colorScheme.secondaryContainer.withValues(alpha: 0.7),
                   ],
                 )
               : null,
           color: enabled
               ? null
               : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: enabled
-                ? colorScheme.secondary.withValues(alpha: 0.5)
+                ? colorScheme.secondary.withValues(alpha: 0.6)
                 : colorScheme.outline.withValues(alpha: 0.1),
-            width: enabled ? 1.5 : 1,
+            width: enabled ? 2 : 1,
           ),
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: colorScheme.secondary.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        child: Icon(
-          icon,
-          color: enabled
-              ? colorScheme.onSecondaryContainer
-              : colorScheme.onSurface.withValues(alpha: 0.3),
-          size: 22,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: enabled
+                  ? colorScheme.onSecondaryContainer
+                  : colorScheme.onSurface.withValues(alpha: 0.3),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: enabled
+                    ? colorScheme.onSecondaryContainer
+                    : colorScheme.onSurface.withValues(alpha: 0.3),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -547,7 +604,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final localizations = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
-    final screenHeight = mediaQuery.size.height;
 
     return GestureDetector(
       onPanStart: _handleSwipeStart,
@@ -555,7 +611,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       onPanEnd: _handleSwipeEnd,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Calculator'),
+          title: const Text('SMARTCALC'),
           // Hide some actions on smaller screens to save space
           actions: screenWidth < 600
               ? _buildCompactAppBarActions(context, localizations)
@@ -658,13 +714,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                     ),
                 ],
               ),
-              // Floating calculator overlay
-              if (_showFloating)
-                Positioned(
-                  top: screenHeight < 700 ? 80 : 100,
-                  right: screenWidth < 360 ? 10 : 20,
-                  child: FloatingCalculator(),
-                ),
             ],
           ),
         ),
@@ -683,32 +732,16 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         tooltip: 'More',
         onSelected: (value) {
           switch (value) {
-            case 'handwriting':
-              setState(() {
-                _showHandwriting = !_showHandwriting;
-              });
-              break;
             case 'step':
               setState(() {
                 _showStepByStep = !_showStepByStep;
               });
               break;
-            case 'ar':
-              _showARMode(context);
-              break;
-            case 'floating':
-              setState(() {
-                _showFloating = !_showFloating;
-              });
-              break;
-            case 'mode':
-              _toggleScientificMode();
-              break;
-            case 'undo':
-              _undo();
-              break;
-            case 'redo':
-              _redo();
+            case 'currency':
+              showDialog(
+                context: context,
+                builder: (context) => const CurrencyConverterDialog(),
+              );
               break;
             case 'settings':
               _showSettings(context, localizations);
@@ -719,19 +752,17 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 MaterialPageRoute(builder: (context) => const AboutScreen()),
               );
               break;
+            case 'handwriting':
+              setState(() {
+                _showHandwriting = !_showHandwriting;
+              });
+              break;
+            case 'ar':
+              _showARMode(context);
+              break;
           }
         },
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'handwriting',
-            child: Row(
-              children: [
-                const Icon(Icons.edit, size: 20),
-                const SizedBox(width: 8),
-                const Text('Handwriting'),
-              ],
-            ),
-          ),
           PopupMenuItem(
             value: 'step',
             child: Row(
@@ -743,59 +774,12 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
             ),
           ),
           PopupMenuItem(
-            value: 'ar',
+            value: 'currency',
             child: Row(
               children: [
-                const Icon(Icons.camera_alt, size: 20),
+                const Icon(Icons.currency_exchange, size: 20),
                 const SizedBox(width: 8),
-                const Text('AR Mode'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'floating',
-            child: Row(
-              children: [
-                const Icon(Icons.open_in_new, size: 20),
-                const SizedBox(width: 8),
-                const Text('Floating'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'mode',
-            child: Row(
-              children: [
-                Icon(
-                  _isScientificMode ? Icons.calculate : Icons.science,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _isScientificMode
-                      ? localizations.basicMode
-                      : localizations.scientificMode,
-                ),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'undo',
-            child: Row(
-              children: [
-                const Icon(Icons.undo, size: 20),
-                const SizedBox(width: 8),
-                Text(localizations.undo),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'redo',
-            child: Row(
-              children: [
-                const Icon(Icons.redo, size: 20),
-                const SizedBox(width: 8),
-                Text(localizations.redo),
+                const Text('Currency Converter'),
               ],
             ),
           ),
@@ -819,27 +803,38 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
               ],
             ),
           ),
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'handwriting',
+            child: Row(
+              children: [
+                const Icon(Icons.edit, size: 20),
+                const SizedBox(width: 8),
+                const Text('Handwriting Input'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'ar',
+            child: Row(
+              children: [
+                const Icon(Icons.camera_alt, size: 20),
+                const SizedBox(width: 8),
+                const Text('AR Mode'),
+              ],
+            ),
+          ),
         ],
       ),
     ];
   }
 
-  /// Build full app bar actions for larger screens
+  /// Build full app bar actions for larger screens - Only essential features
   List<Widget> _buildFullAppBarActions(
     BuildContext context,
     AppLocalizations localizations,
   ) {
     return [
-      // Handwriting mode
-      IconButton(
-        icon: const Icon(Icons.edit),
-        onPressed: () {
-          setState(() {
-            _showHandwriting = !_showHandwriting;
-          });
-        },
-        tooltip: 'Handwriting Input',
-      ),
       // Step-by-step mode
       IconButton(
         icon: const Icon(Icons.info_outline),
@@ -850,41 +845,16 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         },
         tooltip: 'Step-by-Step',
       ),
-      // AR mode
+      // Currency Converter
       IconButton(
-        icon: const Icon(Icons.camera_alt),
-        onPressed: () => _showARMode(context),
-        tooltip: 'AR Mode',
-      ),
-      // Floating calculator
-      IconButton(
-        icon: const Icon(Icons.open_in_new),
+        icon: const Icon(Icons.currency_exchange),
         onPressed: () {
-          setState(() {
-            _showFloating = !_showFloating;
-          });
+          showDialog(
+            context: context,
+            builder: (context) => const CurrencyConverterDialog(),
+          );
         },
-        tooltip: 'Floating Calculator',
-      ),
-      // Mode toggle
-      IconButton(
-        icon: Icon(_isScientificMode ? Icons.calculate : Icons.science),
-        onPressed: _toggleScientificMode,
-        tooltip: _isScientificMode
-            ? localizations.basicMode
-            : localizations.scientificMode,
-      ),
-      // Undo
-      IconButton(
-        icon: const Icon(Icons.undo),
-        onPressed: _undo,
-        tooltip: localizations.undo,
-      ),
-      // Redo
-      IconButton(
-        icon: const Icon(Icons.redo),
-        onPressed: _redo,
-        tooltip: localizations.redo,
+        tooltip: 'Currency Converter',
       ),
       // Settings
       IconButton(
@@ -902,6 +872,45 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           );
         },
         tooltip: 'About & Help',
+      ),
+      // More options menu
+      PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert),
+        tooltip: 'More Options',
+        onSelected: (value) {
+          switch (value) {
+            case 'handwriting':
+              setState(() {
+                _showHandwriting = !_showHandwriting;
+              });
+              break;
+            case 'ar':
+              _showARMode(context);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'handwriting',
+            child: Row(
+              children: [
+                const Icon(Icons.edit, size: 20),
+                const SizedBox(width: 8),
+                const Text('Handwriting Input'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'ar',
+            child: Row(
+              children: [
+                const Icon(Icons.camera_alt, size: 20),
+                const SizedBox(width: 8),
+                const Text('AR Mode'),
+              ],
+            ),
+          ),
+        ],
       ),
     ];
   }
@@ -946,11 +955,23 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     if (result != null && mounted) {
       await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
       await ThemeManager.setAccentColorIndex(result['accentColorIndex'] as int);
-      // Close dialog - theme will update automatically via main app's listener
+      // Close dialog first
       if (!mounted) return;
       Navigator.of(context).pop();
-      // Small delay to ensure theme settings are saved
-      // The main app's theme listener will pick up the changes and rebuild
+      // Force rebuild by popping and pushing to trigger MaterialApp rebuild
+      // The main app's listener will detect the change within 500ms
+      // But we trigger immediate rebuild here to avoid black screen
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          // The main app listener should have updated by now
+          // If not, we can force a rebuild by navigating
+          final route = ModalRoute.of(context);
+          if (route != null && route.isCurrent) {
+            // Small delay to ensure settings are saved and main app updates
+            // No need to navigate - just let the listener handle it
+          }
+        }
+      });
     }
   }
 }
