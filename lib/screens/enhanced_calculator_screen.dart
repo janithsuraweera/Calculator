@@ -395,9 +395,14 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final mediaQuery = MediaQuery.of(context);
+    final isPortrait = mediaQuery.orientation == Orientation.portrait;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: isPortrait ? 16 : 12,
+        vertical: isPortrait ? 12 : 8,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -426,7 +431,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         children: [
           // Scientific/Basic Mode Toggle
           Expanded(child: _buildModeToggleButton(context, localizations)),
-          const SizedBox(width: 16),
+          SizedBox(width: isPortrait ? 16 : 8),
           // Undo Button - Prominent
           Expanded(
             child: _buildActionButton(
@@ -437,7 +442,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
               enabled: _undoStack.isNotEmpty,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isPortrait ? 12 : 8),
           // Redo Button - Prominent
           Expanded(
             child: _buildActionButton(

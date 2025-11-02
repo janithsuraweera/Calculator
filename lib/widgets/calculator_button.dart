@@ -26,17 +26,22 @@ class CalculatorButton extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
+    final isPortrait = mediaQuery.orientation == Orientation.portrait;
 
-    // Responsive sizing
-    // Smaller screens get smaller buttons
-    final double buttonPadding = screenWidth < 360 ? 3.0 : 4.0;
-    final double buttonHeight = screenWidth < 360
-        ? 56.0
-        : (screenWidth < 600 ? 60.0 : 64.0);
-    final double fontSize = screenWidth < 360
-        ? 20.0
-        : (screenWidth < 600 ? 22.0 : 24.0);
-    final double borderRadius = screenWidth < 360 ? 10.0 : 12.0;
+    // Responsive sizing based on orientation
+    // Smaller buttons in landscape to fit more content
+    final double buttonPadding = isPortrait
+        ? (screenWidth < 360 ? 3.0 : 4.0)
+        : (screenWidth < 600 ? 2.0 : 3.0);
+    final double buttonHeight = isPortrait
+        ? (screenWidth < 360 ? 56.0 : (screenWidth < 600 ? 60.0 : 64.0))
+        : (screenWidth < 600 ? 50.0 : 56.0);
+    final double fontSize = isPortrait
+        ? (screenWidth < 360 ? 20.0 : (screenWidth < 600 ? 22.0 : 24.0))
+        : (screenWidth < 600 ? 18.0 : 20.0);
+    final double borderRadius = isPortrait
+        ? (screenWidth < 360 ? 10.0 : 12.0)
+        : (screenWidth < 600 ? 8.0 : 10.0);
 
     // Default colors based on button type
     final Color bgColor =

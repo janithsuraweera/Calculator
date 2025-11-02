@@ -20,23 +20,25 @@ class CalculatorDisplay extends StatelessWidget {
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
     final screenHeight = mediaQuery.size.height;
+    final isPortrait = mediaQuery.orientation == Orientation.portrait;
 
-    // Responsive sizing based on screen dimensions
-    // Use smaller sizes for smaller screens
-    final double padding = screenWidth < 360
-        ? 16.0
-        : (screenWidth < 600 ? 20.0 : 24.0);
-    final double expressionFontSize = screenWidth < 360
-        ? 18.0
-        : (screenWidth < 600 ? 20.0 : 24.0);
-    final double resultFontSize = screenWidth < 360
-        ? 36.0
-        : (screenWidth < 600 ? 42.0 : 48.0);
+    // Responsive sizing based on orientation
+    final double padding = isPortrait
+        ? (screenWidth < 360 ? 16.0 : (screenWidth < 600 ? 20.0 : 24.0))
+        : (screenWidth < 600 ? 12.0 : 16.0);
+    final double expressionFontSize = isPortrait
+        ? (screenWidth < 360 ? 18.0 : (screenWidth < 600 ? 20.0 : 24.0))
+        : (screenWidth < 600 ? 16.0 : 18.0);
+    final double resultFontSize = isPortrait
+        ? (screenWidth < 360 ? 36.0 : (screenWidth < 600 ? 42.0 : 48.0))
+        : (screenWidth < 600 ? 28.0 : 32.0);
 
-    // Adjust height based on screen size, ensuring it's not too large on small screens
-    final double displayHeight = screenHeight < 700
-        ? (screenHeight * 0.25).clamp(150.0, 200.0)
-        : (screenHeight * 0.3).clamp(200.0, 250.0);
+    // Adjust height based on orientation and screen size
+    final double displayHeight = isPortrait
+        ? (screenHeight < 700
+              ? (screenHeight * 0.25).clamp(150.0, 200.0)
+              : (screenHeight * 0.3).clamp(200.0, 250.0))
+        : (screenWidth < 600 ? 120.0 : 140.0); // Smaller in landscape
 
     return Container(
       height: displayHeight,
