@@ -460,14 +460,22 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                     await ThemeManager.getAccentColorIndex();
 
                 if (!mounted) return;
-
-                await showDialog<Map<String, dynamic>>(
+                final result = await showDialog<Map<String, dynamic>>(
+                  // ignore: use_build_context_synchronously
                   context: context,
                   builder: (context) => EnhancedSettingsDialog(
                     currentTheme: currentTheme,
                     currentAccentColorIndex: currentAccentColorIndex,
                   ),
                 );
+
+                if (result != null && mounted) {
+                  await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
+                  await ThemeManager.setAccentColorIndex(
+                    result['accentColorIndex'] as int,
+                  );
+                  // Theme will be updated by the parent widget
+                }
               },
               tooltip: localizations.settings,
             ),

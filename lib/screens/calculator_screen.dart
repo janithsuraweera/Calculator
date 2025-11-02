@@ -364,6 +364,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () async {
+              if (!mounted) return;
               final currentTheme =
                   Theme.of(context).brightness == Brightness.dark
                   ? ThemeMode.dark
@@ -374,6 +375,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
               if (!mounted) return;
 
               final result = await showDialog<Map<String, dynamic>>(
+                // ignore: use_build_context_synchronously
                 context: context,
                 builder: (context) => SettingsDialog(
                   currentTheme: currentTheme,

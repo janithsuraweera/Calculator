@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/enhanced_calculator_screen.dart';
 import 'services/theme_manager.dart';
+import 'widgets/splash_screen.dart';
 
 /// Main entry point of the Calculator application
 /// Author: Janith Suraweera
@@ -36,6 +37,7 @@ class _CalculatorAppState extends State<CalculatorApp> {
   ThemeMode _themeMode = ThemeMode.light;
   int _accentColorIndex = 0;
   bool _isInitialized = false;
+  bool _showSplash = true;
 
   @override
   void initState() {
@@ -53,6 +55,14 @@ class _CalculatorAppState extends State<CalculatorApp> {
       _themeMode = themeMode;
       _accentColorIndex = accentColorIndex;
       _isInitialized = true;
+    });
+  }
+
+  /// Handle splash screen finish
+  /// Splash screen එක අවසන් වීම handle කිරීම
+  void _onSplashFinish() {
+    setState(() {
+      _showSplash = false;
     });
   }
 
@@ -89,7 +99,9 @@ class _CalculatorAppState extends State<CalculatorApp> {
       theme: themeData,
       darkTheme: themeData,
       themeMode: _themeMode,
-      home: const EnhancedCalculatorScreen(),
+      home: _showSplash
+          ? SplashScreen(onFinish: _onSplashFinish)
+          : const EnhancedCalculatorScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
