@@ -450,6 +450,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () async {
+                if (!mounted) return;
+
                 final currentTheme =
                     Theme.of(context).brightness == Brightness.dark
                     ? ThemeMode.dark
@@ -461,11 +463,11 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
                 await showDialog<Map<String, dynamic>>(
                   context: context,
-                    builder: (context) => EnhancedSettingsDialog(
-                      currentTheme: currentTheme,
-                      currentAccentColorIndex: currentAccentColorIndex,
-                    ),
-                  );
+                  builder: (context) => EnhancedSettingsDialog(
+                    currentTheme: currentTheme,
+                    currentAccentColorIndex: currentAccentColorIndex,
+                  ),
+                );
               },
               tooltip: localizations.settings,
             ),
