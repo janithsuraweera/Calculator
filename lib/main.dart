@@ -11,21 +11,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize theme settings
-  // Theme settings initialize කිරීම
   await _initializeApp();
 
   runApp(const CalculatorApp());
 }
 
 /// Initialize app settings
-/// App settings initialize කිරීම
 Future<void> _initializeApp() async {
   // Any initialization code can go here
-  // Any initialization code මෙතන add කළ හැක
 }
 
 /// Main calculator application widget
-/// මූලික calculator application widget එක
 class CalculatorApp extends StatefulWidget {
   const CalculatorApp({super.key});
 
@@ -46,7 +42,6 @@ class _CalculatorAppState extends State<CalculatorApp> {
   }
 
   /// Load theme settings from storage
-  /// Storage වලින් theme settings load කිරීම
   Future<void> _loadThemeSettings() async {
     final themeMode = await ThemeManager.getThemeMode();
     final accentColorIndex = await ThemeManager.getAccentColorIndex();
@@ -59,7 +54,6 @@ class _CalculatorAppState extends State<CalculatorApp> {
   }
 
   /// Handle splash screen finish
-  /// Splash screen එක අවසන් වීම handle කිරීම
   void _onSplashFinish() {
     setState(() {
       _showSplash = false;
@@ -70,7 +64,6 @@ class _CalculatorAppState extends State<CalculatorApp> {
   Widget build(BuildContext context) {
     if (!_isInitialized) {
       // Show loading indicator while initializing
-      // Initialize වන අතරතුර loading indicator පෙන්වීම
       return const MaterialApp(
         home: Scaffold(body: Center(child: CircularProgressIndicator())),
       );
@@ -82,7 +75,6 @@ class _CalculatorAppState extends State<CalculatorApp> {
     return MaterialApp(
       title: 'Calculator',
       // Enable localization
-      // Localization enable කිරීම
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -94,7 +86,6 @@ class _CalculatorAppState extends State<CalculatorApp> {
         Locale('si', ''), // Sinhala
       ],
       // Set default locale
-      // Default locale set කිරීම
       locale: const Locale('si', ''), // Default to Sinhala
       theme: themeData,
       darkTheme: themeData,

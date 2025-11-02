@@ -1,3 +1,26 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "disabled",
+  "java.import.gradle.enabled": false,
+  "java.import.gradle.wrapper.enabled": false,
+  "java.project.referencedLibraries": [
+    "android/**/*.jar"
+  ],
+  "java.import.exclusions": [
+    "**/build/**",
+    "**/.gradle/**",
+    "**/build/camera_android_camerax/**",
+    "**/.pub-cache/**",
+    "**/Pub/Cache/**",
+    "**/camera_android_camerax/**"
+  ],
+  "files.exclude": {
+    "**/build": true,
+    "**/.gradle": true
+  },
+  "java.compile.nullAnalysis.mode": "automatic",
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/.gradle/**": true,
+    "**/.pub-cache/**": true
+  }
 }
