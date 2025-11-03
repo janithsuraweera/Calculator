@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 /// Handwriting input widget for drawing mathematical expressions
 class HandwritingInput extends StatefulWidget {
@@ -13,6 +17,7 @@ class HandwritingInput extends StatefulWidget {
 class _HandwritingInputState extends State<HandwritingInput> {
   final List<List<Offset>> _strokes = <List<Offset>>[];
   List<Offset> _currentStroke = <Offset>[];
+  final GlobalKey _paintKey = GlobalKey();
 
   /// Clear the drawing
   void clear() {
@@ -22,16 +27,61 @@ class _HandwritingInputState extends State<HandwritingInput> {
     });
   }
 
-  /// Recognize handwriting and convert to expression
+  /// Recognize handwriting and convert to expression using OCR on captured image
   Future<void> recognize() async {
-    // Simplified recognition - in production, use ML Kit or similar
-    // This is a placeholder that converts drawn strokes to text
     if (_strokes.isEmpty && _currentStroke.isEmpty) return;
+    try {
+      final boundary =
+          _paintKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final bytes = byteData.buffer.asUint8List();
+      final file = await File(
+        '${Directory.systemTemp.path}/hand_${DateTime.now().millisecondsSinceEpoch}.png',
+      ).create(recursive: true);
+      await file.writeAsBytes(bytes, flush: true);
 
-    // For now, return a placeholder
-    // In a real implementation, this would use handwriting recognition
-    widget.onExpressionRecognized('2+2'); // Placeholder
-    clear();
+      final recognizer = TextRecognizer();
+      final input = InputImage.fromFilePath(file.path);
+      final recognized = await recognizer.processImage(input);
+      await recognizer.close();
+
+      String? candidate;
+      final List<String> lines = recognized.text
+          .split('\n')
+          .map((l) => l.trim())
+          .where((l) => l.isNotEmpty)
+          .toList();
+      final RegExp mathLike = RegExp(r'^[0-9\s\.,\-\+\*/xX÷×%()=]+$');
+      for (final line in lines) {
+        if (mathLike.hasMatch(line)) {
+          candidate = line;
+          break;
+        }
+      }
+      candidate ??= recognized.text.replaceAll('\n', ' ');
+
+      String expr = candidate
+          .replaceAll(' ', '')
+          .replaceAll(',', '.')
+          .replaceAll('x', '×')
+          .replaceAll('X', '×')
+          .replaceAll('*', '×')
+          .replaceAll('/', '÷');
+      if (expr.endsWith('=')) {
+        expr = expr.substring(0, expr.length - 1);
+      }
+      if (RegExp(r'[0-9]').hasMatch(expr)) {
+        widget.onExpressionRecognized(expr);
+      }
+    } catch (_) {
+      // ignore errors
+    } finally {
+      clear();
+    }
   }
 
   @override
@@ -39,35 +89,38 @@ class _HandwritingInputState extends State<HandwritingInput> {
     return Column(
       children: [
         // Drawing area
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: GestureDetector(
-            onPanStart: (details) {
-              setState(() {
-                _currentStroke = [details.localPosition];
-              });
-            },
-            onPanUpdate: (details) {
-              setState(() {
-                _currentStroke.add(details.localPosition);
-              });
-            },
-            onPanEnd: (details) {
-              setState(() {
-                if (_currentStroke.isNotEmpty) {
-                  _strokes.add(List.from(_currentStroke));
-                  _currentStroke.clear();
-                }
-              });
-            },
-            child: CustomPaint(
-              painter: HandwritingPainter(_strokes, _currentStroke),
-              child: Container(),
+        RepaintBoundary(
+          key: _paintKey,
+          child: Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: GestureDetector(
+              onPanStart: (details) {
+                setState(() {
+                  _currentStroke = [details.localPosition];
+                });
+              },
+              onPanUpdate: (details) {
+                setState(() {
+                  _currentStroke.add(details.localPosition);
+                });
+              },
+              onPanEnd: (details) {
+                setState(() {
+                  if (_currentStroke.isNotEmpty) {
+                    _strokes.add(List.from(_currentStroke));
+                    _currentStroke.clear();
+                  }
+                });
+              },
+              child: CustomPaint(
+                painter: HandwritingPainter(_strokes, _currentStroke),
+                child: Container(),
+              ),
             ),
           ),
         ),

@@ -443,6 +443,32 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                   showUnitConverterMenu(context, _showUnitConverter),
               enabled: true,
             ),
+            // SizedBox(width: isPortrait ? 10 : 6),
+            // // Step-by-step toggle quick button
+            // _buildActionButton(
+            //   context,
+            //   icon: Icons.info_outline,
+            //   label: 'Steps',
+            //   onPressed: () {
+            //     setState(() {
+            //       _showStepByStep = !_showStepByStep;
+            //     });
+            //   },
+            //   enabled: _expression.isNotEmpty,
+            // ),
+            // SizedBox(width: isPortrait ? 10 : 6),
+            // // Handwriting input quick toggle
+            // _buildActionButton(
+            //   context,
+            //   icon: Icons.edit,
+            //   label: 'Write',
+            //   onPressed: () {
+            //     setState(() {
+            //       _showHandwriting = !_showHandwriting;
+            //     });
+            //   },
+            //   enabled: true,
+            // ),
             SizedBox(width: isPortrait ? 10 : 6),
             _buildActionButton(
               context,
