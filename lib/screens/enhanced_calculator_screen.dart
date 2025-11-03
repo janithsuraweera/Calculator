@@ -998,23 +998,11 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     if (result != null && mounted) {
       await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
       await ThemeManager.setAccentColorIndex(result['accentColorIndex'] as int);
-      // Close dialog first
+      // Notify user and stay on calculator UI; theme listener in main will update
       if (!mounted) return;
-      Navigator.of(context).pop();
-      // Force rebuild by popping and pushing to trigger MaterialApp rebuild
-      // The main app's listener will detect the change within 500ms
-      // But we trigger immediate rebuild here to avoid black screen
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) {
-          // The main app listener should have updated by now
-          // If not, we can force a rebuild by navigating
-          final route = ModalRoute.of(context);
-          if (route != null && route.isCurrent) {
-            // Small delay to ensure settings are saved and main app updates
-            // No need to navigate - just let the listener handle it
-          }
-        }
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings saved successfully')),
+      );
     }
   }
 }
