@@ -434,6 +434,16 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           children: [
             _buildModeToggleButton(context, localizations),
             SizedBox(width: isPortrait ? 10 : 6),
+            // Unit converter quick button next to mode toggle
+            _buildActionButton(
+              context,
+              icon: Icons.swap_horiz,
+              label: 'Units',
+              onPressed: () =>
+                  showUnitConverterMenu(context, _showUnitConverter),
+              enabled: true,
+            ),
+            SizedBox(width: isPortrait ? 10 : 6),
             _buildActionButton(
               context,
               icon: Icons.undo,
@@ -753,9 +763,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 builder: (context) => const CurrencyConverterDialog(),
               );
               break;
-            case 'unit':
-              showUnitConverterMenu(context, _showUnitConverter);
-              break;
             case 'settings':
               _showSettings(context, localizations);
               break;
@@ -793,16 +800,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 const Icon(Icons.currency_exchange, size: 20),
                 const SizedBox(width: 8),
                 const Text('Currency Converter'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'unit',
-            child: Row(
-              children: [
-                const Icon(Icons.swap_horiz, size: 20),
-                const SizedBox(width: 8),
-                const Text('Unit Converter'),
               ],
             ),
           ),
@@ -878,14 +875,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           );
         },
         tooltip: 'Currency Converter',
-      ),
-      // Unit Converter
-      IconButton(
-        icon: const Icon(Icons.swap_horiz),
-        onPressed: () {
-          showUnitConverterMenu(context, _showUnitConverter);
-        },
-        tooltip: 'Unit Converter',
       ),
       // Settings
       IconButton(
