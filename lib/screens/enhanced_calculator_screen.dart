@@ -7,7 +7,7 @@ import '../widgets/calculator_display.dart';
 import '../widgets/calculator_keypad.dart';
 import '../widgets/history_panel.dart';
 import '../widgets/enhanced_settings_dialog.dart';
-import '../widgets/handwriting_input.dart';
+// Removed handwriting input import
 // Removed step-by-step view import
 import '../widgets/ar_camera_view.dart';
 import '../widgets/unit_converter_dialog.dart';
@@ -35,7 +35,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   String _result = '0';
   bool _isScientificMode = false;
   bool _isError = false;
-  bool _showHandwriting = false;
+  // Removed handwriting overlay state
   // Removed step-by-step toggle state
 
   // Undo/Redo stacks
@@ -676,20 +676,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                   ),
                   // Quick Action Bar - Scientific/Basic toggle, Undo/Redo
                   _buildQuickActionBar(context, localizations),
-                  // Handwriting input overlay
-                  if (_showHandwriting)
-                    Container(
-                      padding: EdgeInsets.all(screenWidth < 360 ? 12 : 16),
-                      child: HandwritingInput(
-                        onExpressionRecognized: (expr) {
-                          setState(() {
-                            _expression = expr;
-                            _evaluateExpression();
-                            _showHandwriting = false;
-                          });
-                        },
-                      ),
-                    ),
+                  // Handwriting input overlay removed
                   // Tabs
                   TabBar(
                     controller: _tabController,
@@ -778,11 +765,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 MaterialPageRoute(builder: (context) => const AboutScreen()),
               );
               break;
-            case 'handwriting':
-              setState(() {
-                _showHandwriting = !_showHandwriting;
-              });
-              break;
             case 'ar':
               _showARMode(context);
               break;
@@ -820,16 +802,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
             ),
           ),
           const PopupMenuDivider(),
-          PopupMenuItem(
-            value: 'handwriting',
-            child: Row(
-              children: [
-                const Icon(Icons.edit, size: 20),
-                const SizedBox(width: 8),
-                const Text('Handwriting Input'),
-              ],
-            ),
-          ),
           PopupMenuItem(
             value: 'ar',
             child: Row(
@@ -885,27 +857,12 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         tooltip: 'More Options',
         onSelected: (value) {
           switch (value) {
-            case 'handwriting':
-              setState(() {
-                _showHandwriting = !_showHandwriting;
-              });
-              break;
             case 'ar':
               _showARMode(context);
               break;
           }
         },
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'handwriting',
-            child: Row(
-              children: [
-                const Icon(Icons.edit, size: 20),
-                const SizedBox(width: 8),
-                const Text('Handwriting Input'),
-              ],
-            ),
-          ),
           PopupMenuItem(
             value: 'ar',
             child: Row(
