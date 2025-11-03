@@ -401,8 +401,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isPortrait ? 16 : 12,
-        vertical: isPortrait ? 12 : 8,
+        horizontal: isPortrait ? 14 : 10,
+        vertical: isPortrait ? 8 : 6,
       ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -432,7 +432,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         children: [
           // Scientific/Basic Mode Toggle
           Expanded(child: _buildModeToggleButton(context, localizations)),
-          SizedBox(width: isPortrait ? 16 : 8),
+          SizedBox(width: isPortrait ? 10 : 6),
           // Undo Button - Prominent
           Expanded(
             child: _buildActionButton(
@@ -443,7 +443,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
               enabled: _undoStack.isNotEmpty,
             ),
           ),
-          SizedBox(width: isPortrait ? 12 : 8),
+          SizedBox(width: isPortrait ? 10 : 6),
           // Redo Button - Prominent
           Expanded(
             child: _buildActionButton(
@@ -473,7 +473,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           gradient: _isScientificMode
               ? LinearGradient(
@@ -548,7 +548,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           gradient: enabled
               ? LinearGradient(

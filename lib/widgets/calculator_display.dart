@@ -34,11 +34,12 @@ class CalculatorDisplay extends StatelessWidget {
         : (screenWidth < 600 ? 28.0 : 32.0);
 
     // Adjust height based on orientation and screen size
+    // Reduce height so the keypad has more space and avoids overflow
     final double displayHeight = isPortrait
         ? (screenHeight < 700
-              ? (screenHeight * 0.25).clamp(150.0, 200.0)
-              : (screenHeight * 0.3).clamp(200.0, 250.0))
-        : (screenWidth < 600 ? 120.0 : 140.0); // Smaller in landscape
+              ? (screenHeight * 0.20).clamp(120.0, 170.0)
+              : (screenHeight * 0.22).clamp(150.0, 190.0))
+        : (screenWidth < 600 ? 100.0 : 120.0); // Smaller in landscape
 
     return Container(
       height: displayHeight,
