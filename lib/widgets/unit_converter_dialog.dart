@@ -122,7 +122,7 @@ class _UnitConverterDialogState extends State<UnitConverterDialog> {
 
             // From unit
             DropdownButtonFormField<String>(
-              value: _fromUnit,
+              initialValue: _fromUnit,
               decoration: InputDecoration(
                 labelText: 'From',
                 border: OutlineInputBorder(
@@ -155,7 +155,7 @@ class _UnitConverterDialogState extends State<UnitConverterDialog> {
 
             // To unit
             DropdownButtonFormField<String>(
-              value: _toUnit,
+              initialValue: _toUnit,
               decoration: InputDecoration(
                 labelText: 'To',
                 border: OutlineInputBorder(

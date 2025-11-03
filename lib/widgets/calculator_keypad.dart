@@ -26,20 +26,22 @@ class CalculatorKeypad extends StatelessWidget {
         ? (screenWidth < 360 ? 6.0 : 8.0)
         : (screenWidth < 600 ? 4.0 : 6.0);
 
-    // Make keypad scrollable in scientific mode to prevent overflow
-    final keypadContent = Padding(
+    // Build keypad grid with dark background and a floating equals button
+    final keypadGrid = Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
       padding: EdgeInsets.all(padding),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Scientific functions row (shown only in scientific mode)
           if (isScientificMode) ...[
             _buildScientificRow1(context),
             SizedBox(height: rowSpacing),
             _buildScientificRow2(context),
             SizedBox(height: rowSpacing),
           ],
-          // Basic calculator rows
           _buildBasicRow1(context),
           SizedBox(height: rowSpacing),
           _buildBasicRow2(context),
@@ -48,16 +50,44 @@ class CalculatorKeypad extends StatelessWidget {
           SizedBox(height: rowSpacing),
           _buildBasicRow4(context),
           SizedBox(height: rowSpacing),
-          _buildBasicRow5(context),
+          // Bottom row without equals (equals will float)
+          Row(
+            children: [
+              CalculatorButton(
+                label: '0',
+                onTap: () => onButtonPressed('0'),
+                isLarge: true,
+                variant: ButtonVariant.digit,
+              ),
+              CalculatorButton(
+                label: '.',
+                onTap: () => onButtonPressed('.'),
+                variant: ButtonVariant.operator,
+              ),
+              // Spacer to reserve space under the floating equals button
+              const Expanded(child: SizedBox()),
+            ],
+          ),
         ],
       ),
     );
 
     // Wrap in SingleChildScrollView when in scientific mode to prevent overflow
-    if (isScientificMode) {
-      return SingleChildScrollView(child: keypadContent);
-    }
-    return keypadContent;
+    final content = Stack(
+      children: [
+        if (isScientificMode)
+          SingleChildScrollView(child: keypadGrid)
+        else
+          keypadGrid,
+        // Floating big equals button
+        Positioned(
+          right: padding + 4,
+          bottom: padding + 4,
+          child: _buildFloatingEquals(context),
+        ),
+      ],
+    );
+    return content;
   }
 
   // Scientific functions row 1
@@ -90,14 +120,27 @@ class CalculatorKeypad extends StatelessWidget {
   Widget _buildBasicRow1(BuildContext context) {
     return Row(
       children: [
-        CalculatorButton(label: 'AC', onTap: () => onButtonPressed('AC')),
         CalculatorButton(
           label: 'C',
+          onTap: () => onButtonPressed('AC'),
+          variant: ButtonVariant.action,
+        ),
+        CalculatorButton(
+          label: '%',
+          onTap: () => onButtonPressed('%'),
+          variant: ButtonVariant.operator,
+        ),
+        CalculatorButton(
+          label: '⌫',
           onTap: () => onButtonPressed('C'),
           onLongPress: () => onButtonPressed('BACKSPACE'),
+          variant: ButtonVariant.action,
         ),
-        CalculatorButton(label: '%', onTap: () => onButtonPressed('%')),
-        CalculatorButton(label: '÷', onTap: () => onButtonPressed('÷')),
+        CalculatorButton(
+          label: '÷',
+          onTap: () => onButtonPressed('÷'),
+          variant: ButtonVariant.operator,
+        ),
       ],
     );
   }
@@ -106,10 +149,26 @@ class CalculatorKeypad extends StatelessWidget {
   Widget _buildBasicRow2(BuildContext context) {
     return Row(
       children: [
-        CalculatorButton(label: '7', onTap: () => onButtonPressed('7')),
-        CalculatorButton(label: '8', onTap: () => onButtonPressed('8')),
-        CalculatorButton(label: '9', onTap: () => onButtonPressed('9')),
-        CalculatorButton(label: '×', onTap: () => onButtonPressed('×')),
+        CalculatorButton(
+          label: '7',
+          onTap: () => onButtonPressed('7'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '8',
+          onTap: () => onButtonPressed('8'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '9',
+          onTap: () => onButtonPressed('9'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '×',
+          onTap: () => onButtonPressed('×'),
+          variant: ButtonVariant.operator,
+        ),
       ],
     );
   }
@@ -118,10 +177,26 @@ class CalculatorKeypad extends StatelessWidget {
   Widget _buildBasicRow3(BuildContext context) {
     return Row(
       children: [
-        CalculatorButton(label: '4', onTap: () => onButtonPressed('4')),
-        CalculatorButton(label: '5', onTap: () => onButtonPressed('5')),
-        CalculatorButton(label: '6', onTap: () => onButtonPressed('6')),
-        CalculatorButton(label: '−', onTap: () => onButtonPressed('−')),
+        CalculatorButton(
+          label: '4',
+          onTap: () => onButtonPressed('4'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '5',
+          onTap: () => onButtonPressed('5'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '6',
+          onTap: () => onButtonPressed('6'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '−',
+          onTap: () => onButtonPressed('−'),
+          variant: ButtonVariant.operator,
+        ),
       ],
     );
   }
@@ -130,42 +205,49 @@ class CalculatorKeypad extends StatelessWidget {
   Widget _buildBasicRow4(BuildContext context) {
     return Row(
       children: [
-        CalculatorButton(label: '1', onTap: () => onButtonPressed('1')),
-        CalculatorButton(label: '2', onTap: () => onButtonPressed('2')),
-        CalculatorButton(label: '3', onTap: () => onButtonPressed('3')),
-        CalculatorButton(label: '+', onTap: () => onButtonPressed('+')),
+        CalculatorButton(
+          label: '1',
+          onTap: () => onButtonPressed('1'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '2',
+          onTap: () => onButtonPressed('2'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '3',
+          onTap: () => onButtonPressed('3'),
+          variant: ButtonVariant.digit,
+        ),
+        CalculatorButton(
+          label: '+',
+          onTap: () => onButtonPressed('+'),
+          variant: ButtonVariant.operator,
+        ),
       ],
     );
   }
 
   // Basic row 5: 0, ., =, and parentheses in scientific mode
   Widget _buildBasicRow5(BuildContext context) {
-    if (isScientificMode) {
-      return Row(
-        children: [
-          CalculatorButton(label: '(', onTap: () => onButtonPressed('(')),
-          CalculatorButton(
-            label: '0',
-            onTap: () => onButtonPressed('0'),
-            isLarge: true,
-          ),
-          CalculatorButton(label: ')', onTap: () => onButtonPressed(')')),
-          CalculatorButton(label: '.', onTap: () => onButtonPressed('.')),
-          CalculatorButton(label: '=', onTap: () => onButtonPressed('=')),
-        ],
-      );
-    } else {
-      return Row(
-        children: [
-          CalculatorButton(
-            label: '0',
-            onTap: () => onButtonPressed('0'),
-            isLarge: true,
-          ),
-          CalculatorButton(label: '.', onTap: () => onButtonPressed('.')),
-          CalculatorButton(label: '=', onTap: () => onButtonPressed('=')),
-        ],
-      );
-    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildFloatingEquals(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: FloatingActionButton(
+        onPressed: () => onButtonPressed('='),
+        backgroundColor: const Color(0xFF25D366),
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: const Text(
+          '=',
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
   }
 }

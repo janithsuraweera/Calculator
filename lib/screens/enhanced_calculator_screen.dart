@@ -397,8 +397,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final mediaQuery = MediaQuery.of(context);
-    final bool compact = mediaQuery.size.width < 380;
-    final mediaQuery = MediaQuery.of(context);
     final isPortrait = mediaQuery.orientation == Orientation.portrait;
 
     return Container(
@@ -464,6 +462,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final mediaQuery = MediaQuery.of(context);
+    final bool compact = mediaQuery.size.width < 380;
 
     return InkWell(
       onTap: _toggleScientificMode,

@@ -82,7 +82,7 @@ class _CurrencyConverterDialogState extends State<CurrencyConverterDialog> {
 
             // From currency
             DropdownButtonFormField<String>(
-              value: _fromCurrency,
+              initialValue: _fromCurrency,
               decoration: InputDecoration(
                 labelText: 'From Currency',
                 border: OutlineInputBorder(
@@ -118,7 +118,7 @@ class _CurrencyConverterDialogState extends State<CurrencyConverterDialog> {
 
             // To currency
             DropdownButtonFormField<String>(
-              value: _toCurrency,
+              initialValue: _toCurrency,
               decoration: InputDecoration(
                 labelText: 'To Currency',
                 border: OutlineInputBorder(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Calculator button widget with haptic feedback
+enum ButtonVariant { digit, operator, action, equals }
+
 class CalculatorButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
@@ -9,6 +11,7 @@ class CalculatorButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color? textColor;
   final bool isLarge;
+  final ButtonVariant? variant;
 
   const CalculatorButton({
     super.key,
@@ -18,6 +21,7 @@ class CalculatorButton extends StatelessWidget {
     this.backgroundColor,
     this.textColor,
     this.isLarge = false,
+    this.variant,
   });
 
   @override
@@ -43,15 +47,34 @@ class CalculatorButton extends StatelessWidget {
         ? (screenWidth < 360 ? 10.0 : 12.0)
         : (screenWidth < 600 ? 8.0 : 10.0);
 
-    // Default colors based on button type
-    final Color bgColor =
-        backgroundColor ??
-        (label == '='
-            ? colorScheme.primary
-            : colorScheme.surfaceContainerHighest);
-    final Color txtColor =
-        textColor ??
-        (label == '=' ? colorScheme.onPrimary : colorScheme.onSurface);
+    // Default colors based on button type / variant
+    Color resolveBg() {
+      if (backgroundColor != null) return backgroundColor!;
+      switch (variant) {
+        case ButtonVariant.equals:
+          return const Color(0xFF25D366); // green
+        case ButtonVariant.operator:
+          return colorScheme.surfaceContainerHigh;
+        case ButtonVariant.action:
+          return colorScheme.surfaceContainerHighest;
+        case ButtonVariant.digit:
+        default:
+          return colorScheme.surfaceContainerHighest;
+      }
+    }
+
+    Color resolveFg() {
+      if (textColor != null) return textColor!;
+      switch (variant) {
+        case ButtonVariant.equals:
+          return Colors.white;
+        default:
+          return colorScheme.onSurface;
+      }
+    }
+
+    final Color bgColor = resolveBg();
+    final Color txtColor = resolveFg();
 
     return Expanded(
       flex: isLarge ? 2 : 1,
