@@ -40,15 +40,21 @@ class _ARCameraViewState extends State<ARCameraView> {
     });
 
     try {
-      await _arService!.cameraController!.takePicture();
-      // Process image for recognition
-      // Note: This is simplified - actual implementation would process the image
-      // and use ML Kit for text recognition
+      final XFile file = await _arService!.cameraController!.takePicture();
+      final String? expr = await _arService!.recognizeFromFilePath(file.path);
 
+      if (!mounted) return;
       setState(() {
-        _recognizedText = 'Recognition in progress...';
+        _recognizedText = expr ?? 'No expression detected';
         _isRecognizing = false;
       });
+
+      if (expr != null && expr.isNotEmpty) {
+        widget.onExpressionRecognized(expr);
+        if (mounted) {
+          Navigator.of(context).pop(expr);
+        }
+      }
     } catch (e) {
       setState(() {
         _recognizedText = 'Error: $e';

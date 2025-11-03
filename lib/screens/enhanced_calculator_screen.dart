@@ -397,6 +397,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final mediaQuery = MediaQuery.of(context);
+    final bool compact = mediaQuery.size.width < 380;
+    final mediaQuery = MediaQuery.of(context);
     final isPortrait = mediaQuery.orientation == Orientation.portrait;
 
     return Container(
@@ -427,34 +429,30 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // Scientific/Basic Mode Toggle
-          Expanded(child: _buildModeToggleButton(context, localizations)),
-          SizedBox(width: isPortrait ? 10 : 6),
-          // Undo Button - Prominent
-          Expanded(
-            child: _buildActionButton(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            _buildModeToggleButton(context, localizations),
+            SizedBox(width: isPortrait ? 10 : 6),
+            _buildActionButton(
               context,
               icon: Icons.undo,
               label: localizations.undo,
               onPressed: _undo,
               enabled: _undoStack.isNotEmpty,
             ),
-          ),
-          SizedBox(width: isPortrait ? 10 : 6),
-          // Redo Button - Prominent
-          Expanded(
-            child: _buildActionButton(
+            SizedBox(width: isPortrait ? 10 : 6),
+            _buildActionButton(
               context,
               icon: Icons.redo,
               label: localizations.redo,
               onPressed: _redo,
               enabled: _redoStack.isNotEmpty,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -473,7 +471,10 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 12 : 16,
+          vertical: compact ? 8 : 10,
+        ),
         decoration: BoxDecoration(
           gradient: _isScientificMode
               ? LinearGradient(
@@ -513,19 +514,21 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                   : colorScheme.onSurface,
               size: 22,
             ),
-            const SizedBox(width: 10),
-            Text(
-              _isScientificMode
-                  ? localizations.scientificMode
-                  : localizations.basicMode,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: _isScientificMode
-                    ? colorScheme.onPrimary
-                    : colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
+            if (!compact) const SizedBox(width: 10),
+            if (!compact)
+              Text(
+                _isScientificMode
+                    ? localizations.scientificMode
+                    : localizations.basicMode,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: _isScientificMode
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
           ],
         ),
       ),
