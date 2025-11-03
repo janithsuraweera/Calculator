@@ -8,7 +8,7 @@ import '../widgets/calculator_keypad.dart';
 import '../widgets/history_panel.dart';
 import '../widgets/enhanced_settings_dialog.dart';
 import '../widgets/handwriting_input.dart';
-import '../widgets/step_by_step_view.dart';
+// Removed step-by-step view import
 import '../widgets/ar_camera_view.dart';
 import '../widgets/unit_converter_dialog.dart';
 import '../widgets/unit_converter_menu.dart';
@@ -36,7 +36,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   bool _isScientificMode = false;
   bool _isError = false;
   bool _showHandwriting = false;
-  bool _showStepByStep = false;
+  // Removed step-by-step toggle state
 
   // Undo/Redo stacks
   final List<String> _undoStack = [];
@@ -690,74 +690,59 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                         },
                       ),
                     ),
-                  // Step-by-step view
-                  if (_showStepByStep && _expression.isNotEmpty)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.all(screenWidth < 360 ? 12 : 16),
-                        child: StepByStepView(expression: _expression),
-                      ),
-                    ),
                   // Tabs
-                  if (!_showStepByStep)
-                    TabBar(
-                      controller: _tabController,
-                      tabs: [
-                        Tab(
-                          icon: const Icon(Icons.calculate),
-                          text: screenWidth < 360
-                              ? null
-                              : localizations.display,
+                  TabBar(
+                    controller: _tabController,
+                    tabs: [
+                      Tab(
+                        icon: const Icon(Icons.calculate),
+                        text: screenWidth < 360 ? null : localizations.display,
+                      ),
+                      Tab(
+                        icon: const Icon(Icons.history),
+                        text: screenWidth < 360 ? null : localizations.history,
+                      ),
+                      Tab(
+                        icon: const Icon(Icons.lock),
+                        text: screenWidth < 360 ? null : 'Vault',
+                      ),
+                    ],
+                  ),
+                  // Tab content
+                  Expanded(
+                    child: IndexedStack(
+                      index: _selectedTabIndex,
+                      children: [
+                        // Calculator tab
+                        CalculatorKeypad(
+                          isScientificMode: _isScientificMode,
+                          onButtonPressed: _onButtonPressed,
                         ),
-                        Tab(
-                          icon: const Icon(Icons.history),
-                          text: screenWidth < 360
-                              ? null
-                              : localizations.history,
+                        // History tab
+                        HistoryPanel(
+                          history: _history,
+                          onHistoryItemTap: _onHistoryItemTap,
+                          onClearHistory: _clearHistory,
                         ),
-                        Tab(
-                          icon: const Icon(Icons.lock),
-                          text: screenWidth < 360 ? null : 'Vault',
+                        // Vault tab
+                        FutureBuilder<List<CalculationHistory>>(
+                          future: VaultManager.getVaultEntries(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                              return HistoryPanel(
+                                history: snapshot.data!,
+                                onHistoryItemTap: _onHistoryItemTap,
+                                onClearHistory: () async {
+                                  await VaultManager.clearVault();
+                                },
+                              );
+                            }
+                            return Center(child: Text('Vault is empty'));
+                          },
                         ),
                       ],
                     ),
-                  // Tab content
-                  if (!_showStepByStep)
-                    Expanded(
-                      child: IndexedStack(
-                        index: _selectedTabIndex,
-                        children: [
-                          // Calculator tab
-                          CalculatorKeypad(
-                            isScientificMode: _isScientificMode,
-                            onButtonPressed: _onButtonPressed,
-                          ),
-                          // History tab
-                          HistoryPanel(
-                            history: _history,
-                            onHistoryItemTap: _onHistoryItemTap,
-                            onClearHistory: _clearHistory,
-                          ),
-                          // Vault tab
-                          FutureBuilder<List<CalculationHistory>>(
-                            future: VaultManager.getVaultEntries(),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData &&
-                                  snapshot.data!.isNotEmpty) {
-                                return HistoryPanel(
-                                  history: snapshot.data!,
-                                  onHistoryItemTap: _onHistoryItemTap,
-                                  onClearHistory: () async {
-                                    await VaultManager.clearVault();
-                                  },
-                                );
-                              }
-                              return Center(child: Text('Vault is empty'));
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ],
@@ -778,11 +763,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         tooltip: 'More',
         onSelected: (value) {
           switch (value) {
-            case 'step':
-              setState(() {
-                _showStepByStep = !_showStepByStep;
-              });
-              break;
             case 'currency':
               showDialog(
                 context: context,
@@ -809,16 +789,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           }
         },
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'step',
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, size: 20),
-                const SizedBox(width: 8),
-                const Text('Step-by-Step'),
-              ],
-            ),
-          ),
           PopupMenuItem(
             value: 'currency',
             child: Row(
@@ -881,16 +851,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     AppLocalizations localizations,
   ) {
     return [
-      // Step-by-step mode
-      IconButton(
-        icon: const Icon(Icons.info_outline),
-        onPressed: () {
-          setState(() {
-            _showStepByStep = !_showStepByStep;
-          });
-        },
-        tooltip: 'Step-by-Step',
-      ),
       // Currency Converter
       IconButton(
         icon: const Icon(Icons.currency_exchange),
