@@ -72,13 +72,14 @@ class CalculatorKeypad extends StatelessWidget {
       ),
     );
 
-    // Wrap in SingleChildScrollView when in scientific mode to prevent overflow
+    // Always scroll to prevent overflow on small screens and add bottom
+    // padding so the floating equals button doesn't cover content
     final content = Stack(
       children: [
-        if (isScientificMode)
-          SingleChildScrollView(child: keypadGrid)
-        else
-          keypadGrid,
+        SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: 88 + padding),
+          child: keypadGrid,
+        ),
         // Floating big equals button
         Positioned(
           right: padding + 4,

@@ -3,7 +3,8 @@ import '../l10n/app_localizations.dart';
 import '../widgets/calculator_display.dart';
 import '../widgets/calculator_keypad.dart';
 import '../widgets/history_panel.dart';
-import '../widgets/settings_dialog.dart';
+import '../widgets/enhanced_settings_dialog.dart';
+import '../services/vault_manager.dart';
 import '../services/calculator_engine.dart';
 import '../services/history_manager.dart';
 import '../services/theme_manager.dart';
@@ -33,6 +34,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   List<CalculationHistory> _history = [];
   int _selectedTabIndex = 0;
   late TabController _tabController;
+  bool _vaultEnabled = false;
 
   @override
   void initState() {
@@ -44,6 +46,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       });
     });
     _loadHistory();
+    _loadVaultFlag();
   }
 
   @override
@@ -58,6 +61,29 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     final history = await HistoryManager.getHistoryAsync();
     setState(() {
       _history = history;
+    });
+  }
+
+  Future<void> _loadVaultFlag() async {
+    final enabled = await VaultManager.isVaultEnabled();
+    if (!mounted) return;
+    setState(() {
+      _vaultEnabled = enabled;
+      final newLen = _vaultEnabled ? 3 : 2;
+      if (_tabController.length != newLen) {
+        final oldIndex = _selectedTabIndex.clamp(0, newLen - 1);
+        _tabController.dispose();
+        _tabController = TabController(
+          length: newLen,
+          vsync: this,
+          initialIndex: oldIndex,
+        );
+        _tabController.addListener(() {
+          setState(() {
+            _selectedTabIndex = _tabController.index;
+          });
+        });
+      }
     });
   }
 
@@ -377,7 +403,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
               final result = await showDialog<Map<String, dynamic>>(
                 // ignore: use_build_context_synchronously
                 context: context,
-                builder: (context) => SettingsDialog(
+                builder: (context) => EnhancedSettingsDialog(
                   currentTheme: currentTheme,
                   currentAccentColorIndex: currentAccentColorIndex,
                 ),
@@ -389,56 +415,88 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                   result['accentColorIndex'] as int,
                 );
                 // Theme will be updated by the parent widget
+                await _loadVaultFlag();
               }
             },
             tooltip: localizations.settings,
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Display
-          // Display
-          CalculatorDisplay(
-            expression: _expression,
-            result: _result,
-            isError: _isError,
-          ),
-          // Tabs for Calculator and History
-          // Calculator සහ History tabs
-          TabBar(
-            controller: _tabController,
-            tabs: [
-              Tab(
-                icon: const Icon(Icons.calculate),
-                text: localizations.display,
-              ),
-              Tab(icon: const Icon(Icons.history), text: localizations.history),
-            ],
-          ),
-          // Tab content
-          // Tab content
-          Expanded(
-            child: IndexedStack(
-              index: _selectedTabIndex,
-              children: [
-                // Calculator tab
-                // Calculator tab
-                CalculatorKeypad(
-                  isScientificMode: _isScientificMode,
-                  onButtonPressed: _onButtonPressed,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Display
+            // Display
+            CalculatorDisplay(
+              expression: _expression,
+              result: _result,
+              isError: _isError,
+            ),
+            // Tabs for Calculator and History
+            // Calculator සහ History tabs
+            TabBar(
+              controller: _tabController,
+              tabs: [
+                Tab(
+                  icon: const Icon(Icons.calculate),
+                  text: localizations.display,
                 ),
-                // History tab
-                // History tab
-                HistoryPanel(
-                  history: _history,
-                  onHistoryItemTap: _onHistoryItemTap,
-                  onClearHistory: _clearHistory,
+                Tab(
+                  icon: const Icon(Icons.history),
+                  text: localizations.history,
                 ),
+                if (_vaultEnabled)
+                  const Tab(icon: Icon(Icons.lock), text: 'Vault'),
               ],
             ),
-          ),
-        ],
+            // Tab content
+            // Tab content
+            Expanded(
+              child: IndexedStack(
+                index: _selectedTabIndex,
+                children: [
+                  // Calculator tab
+                  // Calculator tab
+                  CalculatorKeypad(
+                    isScientificMode: _isScientificMode,
+                    onButtonPressed: _onButtonPressed,
+                  ),
+                  // History tab
+                  // History tab
+                  HistoryPanel(
+                    history: _history,
+                    onHistoryItemTap: _onHistoryItemTap,
+                    onClearHistory: _clearHistory,
+                  ),
+                  if (_vaultEnabled)
+                    FutureBuilder<List<CalculationHistory>>(
+                      future: VaultManager.getVaultEntries(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final data = snapshot.data ?? [];
+                        if (data.isEmpty) {
+                          return const Center(child: Text('Vault is empty'));
+                        }
+                        return HistoryPanel(
+                          history: data,
+                          onHistoryItemTap: _onHistoryItemTap,
+                          onClearHistory: () async {
+                            await VaultManager.clearVault();
+                            if (mounted) setState(() {});
+                          },
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
