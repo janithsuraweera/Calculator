@@ -230,10 +230,7 @@ class CalculatorKeypad extends StatelessWidget {
     );
   }
 
-  // Basic row 5: 0, ., =, and parentheses in scientific mode
-  Widget _buildBasicRow5(BuildContext context) {
-    return const SizedBox.shrink();
-  }
+  // (old basic row 5 was unused) – removed
 
   Widget _buildFloatingEquals(BuildContext context) {
     return SizedBox(

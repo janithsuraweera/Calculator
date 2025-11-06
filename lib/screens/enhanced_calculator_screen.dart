@@ -45,6 +45,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   List<CalculationHistory> _history = [];
   int _selectedTabIndex = 0;
   late TabController _tabController;
+  bool _vaultEnabled = false;
 
   // Gesture detection
   double _lastSwipeX = 0;
@@ -53,7 +54,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
+    // Start with 2 tabs (Display, History). If vault is enabled, we'll
+    // expand to 3 after loading the flag.
+    _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
     _tabController.addListener(() {
       setState(() {
         _selectedTabIndex = _tabController.index;
@@ -61,6 +64,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     });
     _loadHistory();
     _checkClipboard();
+    _loadVaultFlag();
   }
 
   @override
@@ -95,6 +99,29 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         ),
       );
     }
+  }
+
+  Future<void> _loadVaultFlag() async {
+    final enabled = await VaultManager.isVaultEnabled();
+    if (!mounted) return;
+    setState(() {
+      _vaultEnabled = enabled;
+      final newLen = _vaultEnabled ? 3 : 2;
+      if (_tabController.length != newLen) {
+        final oldIndex = _selectedTabIndex.clamp(0, newLen - 1);
+        _tabController.dispose();
+        _tabController = TabController(
+          length: newLen,
+          vsync: this,
+          initialIndex: oldIndex,
+        );
+        _tabController.addListener(() {
+          setState(() {
+            _selectedTabIndex = _tabController.index;
+          });
+        });
+      }
+    });
   }
 
   /// Load calculation history
@@ -218,6 +245,17 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           break;
 
         case '=':
+          // PIN shortcut to open Vault (e.g., 1234 + '=')
+          if (_expression == '1234') {
+            // Clear and navigate to vault tab if enabled
+            _expression = '';
+            _result = '0';
+            if (_vaultEnabled) {
+              _selectedTabIndex = _tabController.length - 1;
+            }
+            break;
+          }
+
           if (_expression.isNotEmpty) {
             _saveState();
             originalExpression = _expression;
@@ -550,21 +588,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                   : colorScheme.onSurface,
               size: 22,
             ),
-            if (!compact) const SizedBox(width: 10),
-            if (!compact)
-              Text(
-                _isScientificMode
-                    ? localizations.scientificMode
-                    : localizations.basicMode,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: _isScientificMode
-                      ? colorScheme.onPrimary
-                      : colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+            // Text label hidden: icon-only quick action
           ],
         ),
       ),
@@ -629,16 +653,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                   : colorScheme.onSurface.withValues(alpha: 0.3),
               size: 20,
             ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: enabled
-                    ? colorScheme.onSecondaryContainer
-                    : colorScheme.onSurface.withValues(alpha: 0.3),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            // Text label hidden: icon-only quick action
           ],
         ),
       ),
@@ -664,73 +679,78 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
               : _buildFullAppBarActions(context, localizations),
         ),
         body: SafeArea(
-          child: Stack(
+          child: Column(
             children: [
-              Column(
-                children: [
-                  // Display
-                  CalculatorDisplay(
-                    expression: _expression,
-                    result: _result,
-                    isError: _isError,
+              // Display
+              CalculatorDisplay(
+                expression: _expression,
+                result: _result,
+                isError: _isError,
+              ),
+              // Quick Action Bar - Scientific/Basic toggle, Undo/Redo
+              _buildQuickActionBar(context, localizations),
+              // Handwriting input overlay removed
+              // Tabs
+              TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(
+                    icon: const Icon(Icons.calculate),
+                    text: screenWidth < 360 ? null : localizations.display,
                   ),
-                  // Quick Action Bar - Scientific/Basic toggle, Undo/Redo
-                  _buildQuickActionBar(context, localizations),
-                  // Handwriting input overlay removed
-                  // Tabs
-                  TabBar(
-                    controller: _tabController,
-                    tabs: [
-                      Tab(
-                        icon: const Icon(Icons.calculate),
-                        text: screenWidth < 360 ? null : localizations.display,
-                      ),
-                      Tab(
-                        icon: const Icon(Icons.history),
-                        text: screenWidth < 360 ? null : localizations.history,
-                      ),
-                      Tab(
-                        icon: const Icon(Icons.lock),
-                        text: screenWidth < 360 ? null : 'Vault',
-                      ),
-                    ],
+                  Tab(
+                    icon: const Icon(Icons.history),
+                    text: screenWidth < 360 ? null : localizations.history,
                   ),
-                  // Tab content
-                  Expanded(
-                    child: IndexedStack(
-                      index: _selectedTabIndex,
-                      children: [
-                        // Calculator tab
-                        CalculatorKeypad(
-                          isScientificMode: _isScientificMode,
-                          onButtonPressed: _onButtonPressed,
-                        ),
-                        // History tab
-                        HistoryPanel(
-                          history: _history,
-                          onHistoryItemTap: _onHistoryItemTap,
-                          onClearHistory: _clearHistory,
-                        ),
-                        // Vault tab
-                        FutureBuilder<List<CalculationHistory>>(
-                          future: VaultManager.getVaultEntries(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                              return HistoryPanel(
-                                history: snapshot.data!,
-                                onHistoryItemTap: _onHistoryItemTap,
-                                onClearHistory: () async {
-                                  await VaultManager.clearVault();
-                                },
-                              );
-                            }
-                            return Center(child: Text('Vault is empty'));
-                          },
-                        ),
-                      ],
+                  if (_vaultEnabled)
+                    Tab(
+                      icon: const Icon(Icons.lock),
+                      text: screenWidth < 360 ? null : 'Vault',
                     ),
-                  ),
                 ],
+              ),
+              // Tab content
+              Expanded(
+                child: IndexedStack(
+                  index: _selectedTabIndex,
+                  children: [
+                    // Calculator tab
+                    CalculatorKeypad(
+                      isScientificMode: _isScientificMode,
+                      onButtonPressed: _onButtonPressed,
+                    ),
+                    // History tab
+                    HistoryPanel(
+                      history: _history,
+                      onHistoryItemTap: _onHistoryItemTap,
+                      onClearHistory: _clearHistory,
+                    ),
+                    if (_vaultEnabled)
+                      FutureBuilder<List<CalculationHistory>>(
+                        future: VaultManager.getVaultEntries(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          final data = snapshot.data ?? [];
+                          if (data.isEmpty) {
+                            return const Center(child: Text('Vault is empty'));
+                          }
+                          return HistoryPanel(
+                            history: data,
+                            onHistoryItemTap: _onHistoryItemTap,
+                            onClearHistory: () async {
+                              await VaultManager.clearVault();
+                              if (mounted) setState(() {});
+                            },
+                          );
+                        },
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
