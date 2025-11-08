@@ -229,8 +229,10 @@ class _VaultBrowserState extends State<VaultBrowser> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            NoteEditor(folderId: _currentFolderId, onSaved: _loadData),
+        builder: (context) => NoteEditor(
+          folderId: _currentFolderId, // Vault note (secret note)
+          onSaved: _loadData,
+        ),
       ),
     );
     if (result == true) {
@@ -397,7 +399,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
                     children: [
                       Icon(Icons.note_add),
                       SizedBox(width: 8),
-                      Text('Add Note'),
+                      Text('Add Secret Note'),
                     ],
                   ),
                 ),
@@ -664,14 +666,14 @@ class _VaultBrowserState extends State<VaultBrowser> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No notes yet',
+              'No secret notes yet',
               style: theme.textTheme.titleMedium?.copyWith(
                 color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap + to create a new note',
+              'Tap + to create a secret note',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurface.withValues(alpha: 0.5),
               ),

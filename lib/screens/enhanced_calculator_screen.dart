@@ -14,7 +14,9 @@ import '../widgets/unit_converter_dialog.dart';
 import '../widgets/unit_converter_menu.dart';
 import '../widgets/vault_browser.dart';
 import '../widgets/vault_pin_dialog.dart';
+import '../widgets/notes_list_view.dart';
 import '../services/calculator_engine.dart';
+import '../services/screenshot_detector.dart';
 import '../services/history_manager.dart';
 import '../services/theme_manager.dart';
 import '../services/clipboard_manager.dart';
@@ -56,9 +58,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   @override
   void initState() {
     super.initState();
-    // Start with 2 tabs (Display, History). If vault is enabled, we'll
-    // expand to 3 after loading the flag.
-    _tabController = TabController(length: 2, vsync: this, initialIndex: 0);
+    // Start with 3 tabs (Display, History, Notes). If vault is enabled, we'll
+    // expand to 4 after loading the flag.
+    _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
     _tabController.addListener(() {
       setState(() {
         _selectedTabIndex = _tabController.index;
@@ -67,6 +69,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     _loadHistory();
     _checkClipboard();
     _loadVaultFlag();
+    // Initialize screenshot detector
+    ScreenshotDetector.initialize(context);
   }
 
   @override
@@ -108,7 +112,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     if (!mounted) return;
     setState(() {
       _vaultEnabled = enabled;
-      final newLen = _vaultEnabled ? 3 : 2;
+      final newLen = _vaultEnabled ? 4 : 3; // Display, History, Notes, Vault
       if (_tabController.length != newLen) {
         final oldIndex = _selectedTabIndex.clamp(0, newLen - 1);
         _tabController.dispose();
@@ -204,8 +208,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
   /// Handle button press
   Future<void> _onButtonPressed(String button) async {
-    await HapticSoundManager.triggerHaptic();
+    // Play sound if enabled
     await HapticSoundManager.playClickSound();
+    await HapticSoundManager.triggerHaptic();
 
     String? originalExpression;
     String? calcResult;
@@ -704,6 +709,10 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         icon: const Icon(Icons.history),
         text: screenWidth < 360 ? null : localizations.history,
       ),
+      Tab(
+        icon: const Icon(Icons.note),
+        text: screenWidth < 360 ? null : 'Notes',
+      ),
       if (_vaultEnabled)
         Tab(
           icon: const Icon(Icons.lock),
@@ -767,6 +776,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                       onHistoryItemTap: _onHistoryItemTap,
                       onClearHistory: _clearHistory,
                     ),
+                    // Notes tab
+                    const NotesListView(),
+                    // Vault tab (if enabled)
                     if (_vaultEnabled) const VaultBrowser(),
                   ],
                 ),

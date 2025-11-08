@@ -80,8 +80,27 @@ class HapticSoundManager {
     final enabled = await isSoundEnabled();
     if (!enabled) return;
 
-    // Sound playback would be implemented here
-    // For now, we'll use system sound
-    await HapticFeedback.selectionClick();
+    try {
+      final theme = await getSoundTheme();
+
+      // Play system sound based on theme
+      switch (theme) {
+        case classic:
+          await SystemSound.play(SystemSoundType.click);
+          break;
+        case modern:
+          await HapticFeedback.selectionClick();
+          await SystemSound.play(SystemSoundType.click);
+          break;
+        case minimal:
+          await HapticFeedback.selectionClick();
+          break;
+        default:
+          await SystemSound.play(SystemSoundType.click);
+      }
+    } catch (e) {
+      // Fallback to system sound
+      await SystemSound.play(SystemSoundType.click);
+    }
   }
 }

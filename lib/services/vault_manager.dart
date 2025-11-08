@@ -64,6 +64,12 @@ class VaultManager {
     await prefs.setBool(_useBiometricKey, use);
   }
 
+  /// Get biometric preference
+  static Future<bool> getUseBiometric() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_useBiometricKey) ?? false;
+  }
+
   /// Check if biometric is enabled
   static Future<bool> isBiometricEnabled() async {
     final prefs = await SharedPreferences.getInstance();

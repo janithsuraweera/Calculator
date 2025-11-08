@@ -45,6 +45,11 @@ dependencies:
   file_picker: ^8.1.4
   path_provider: ^2.1.4
   crypto: ^3.0.5
+  
+  # Note: The following packages are optional for future enhancements:
+  # - audioplayers: For custom sound playback (currently using SystemSound)
+  # - screenshot_callback: For screenshot detection (currently placeholder)
+  # - google_sign_in, firebase_core, firebase_storage: For Google Cloud backup (currently local backup)
 
 dev_dependencies:
   flutter_test:

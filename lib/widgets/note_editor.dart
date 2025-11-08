@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/vault_note.dart';
 import '../services/vault_manager.dart';
+import '../services/notes_manager.dart';
 
 /// Note editor widget for creating and editing notes
 class NoteEditor extends StatefulWidget {
@@ -95,26 +96,57 @@ class _NoteEditorState extends State<NoteEditor> {
           reminderDate: _reminderDate,
           tags: tags,
         );
-        await VaultManager.updateNote(updatedNote);
+        // Check if it's a vault note or main note
+        if (widget.folderId != null || widget.note!.folderId != null) {
+          await VaultManager.updateNote(updatedNote);
+        } else {
+          await NotesManager.updateNote(updatedNote);
+        }
       } else {
         // Create new note
-        await VaultManager.saveNoteToVault(
-          _titleController.text.trim(),
-          _contentController.text.trim(),
-          folderId: widget.folderId,
-          reminderDate: _reminderDate,
-          tags: tags,
-        );
+        if (widget.folderId != null) {
+          // Vault note
+          await VaultManager.saveNoteToVault(
+            _titleController.text.trim(),
+            _contentController.text.trim(),
+            folderId: widget.folderId,
+            reminderDate: _reminderDate,
+            tags: tags,
+          );
+        } else {
+          // Main note
+          await NotesManager.saveNote(
+            _titleController.text.trim(),
+            _contentController.text.trim(),
+            reminderDate: _reminderDate,
+            tags: tags,
+          );
+        }
       }
 
       if (mounted) {
-        Navigator.pop(context);
-        widget.onSaved?.call();
+        // Show success message before navigating
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.note != null ? 'Note updated' : 'Note saved'),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  widget.note != null
+                      ? 'Note updated successfully'
+                      : 'Note saved successfully',
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
+        // Wait a bit for user to see the message
+        await Future.delayed(const Duration(milliseconds: 500));
+        Navigator.pop(context, true);
+        widget.onSaved?.call();
       }
     } catch (e) {
       if (mounted) {

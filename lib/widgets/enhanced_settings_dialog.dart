@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/theme_manager.dart';
 import '../services/haptic_sound_manager.dart';
 import '../services/vault_manager.dart';
+import '../services/screenshot_detector.dart';
+import '../services/cloud_backup_service.dart';
 import 'vault_pin_dialog.dart';
 
 /// Enhanced settings dialog with all advanced features
@@ -26,6 +28,10 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
   bool soundEnabled = true;
   String soundTheme = 'classic';
   bool vaultEnabled = false;
+  bool biometricEnabled = false;
+  bool screenshotDetectionEnabled = false;
+  bool cloudBackupEnabled = false;
+  String? googleAccountEmail;
 
   @override
   void initState() {
@@ -40,12 +46,20 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
     final sound = await HapticSoundManager.isSoundEnabled();
     final theme = await HapticSoundManager.getSoundTheme();
     final vault = await VaultManager.isVaultEnabled();
+    final biometric = await VaultManager.getUseBiometric();
+    final screenshot = ScreenshotDetector.isEnabled();
+    final cloudBackup = await CloudBackupService.isSignedIn();
+    final email = await CloudBackupService.getCurrentUserEmail();
 
     setState(() {
       hapticIntensity = intensity;
       soundEnabled = sound;
       soundTheme = theme;
       vaultEnabled = vault;
+      biometricEnabled = biometric;
+      screenshotDetectionEnabled = screenshot;
+      cloudBackupEnabled = cloudBackup;
+      googleAccountEmail = email;
     });
   }
 
@@ -236,6 +250,188 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                 }
               },
             ),
+            const SizedBox(height: 24),
+
+            // Biometric authentication
+            _buildSectionTitle(theme, 'Biometric Authentication'),
+            SwitchListTile(
+              title: const Text('Enable Biometric'),
+              subtitle: const Text('Use fingerprint or face ID'),
+              value: biometricEnabled,
+              onChanged: vaultEnabled
+                  ? (value) async {
+                      if (value) {
+                        final isAvailable =
+                            await VaultManager.isBiometricAvailable();
+                        if (isAvailable) {
+                          await VaultManager.setUseBiometric(true);
+                          setState(() {
+                            biometricEnabled = true;
+                          });
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Biometric authentication is not available on this device',
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      } else {
+                        await VaultManager.setUseBiometric(false);
+                        setState(() {
+                          biometricEnabled = false;
+                        });
+                      }
+                    }
+                  : null,
+            ),
+            const SizedBox(height: 24),
+
+            // Screenshot detection
+            _buildSectionTitle(theme, 'Screenshot Detection'),
+            SwitchListTile(
+              title: const Text('Enable Screenshot Detection'),
+              subtitle: const Text(
+                'Show reminder notes when screenshot is taken',
+              ),
+              value: screenshotDetectionEnabled,
+              onChanged: (value) {
+                ScreenshotDetector.setEnabled(value);
+                setState(() {
+                  screenshotDetectionEnabled = value;
+                });
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // Google Cloud Backup
+            _buildSectionTitle(theme, 'Cloud Backup'),
+            SwitchListTile(
+              title: const Text('Google Cloud Backup'),
+              subtitle: Text(
+                googleAccountEmail != null
+                    ? 'Signed in as: $googleAccountEmail'
+                    : 'Backup all data to Google Cloud',
+              ),
+              value: cloudBackupEnabled,
+              onChanged: (value) async {
+                if (value) {
+                  // Sign in
+                  try {
+                    final success = await CloudBackupService.signIn();
+                    if (success) {
+                      final email =
+                          await CloudBackupService.getCurrentUserEmail();
+                      setState(() {
+                        cloudBackupEnabled = true;
+                        googleAccountEmail = email;
+                      });
+                      // Auto backup
+                      await CloudBackupService.backupAllData();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Backup completed successfully'),
+                          ),
+                        );
+                      }
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Failed to sign in to Google'),
+                          ),
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Google Cloud backup is not available: ${e.toString()}',
+                          ),
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                    setState(() {
+                      cloudBackupEnabled = false;
+                    });
+                  }
+                } else {
+                  // Sign out
+                  await CloudBackupService.signOut();
+                  setState(() {
+                    cloudBackupEnabled = false;
+                    googleAccountEmail = null;
+                  });
+                }
+              },
+            ),
+            if (cloudBackupEnabled) ...[
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.backup),
+                title: const Text('Backup Now'),
+                onTap: () async {
+                  final success = await CloudBackupService.backupAllData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Backup completed successfully'
+                              : 'Backup failed',
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.restore),
+                title: const Text('Restore from Backup'),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Restore Backup'),
+                      content: const Text(
+                        'This will replace all current data with the backup. Continue?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Restore'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    final success = await CloudBackupService.restoreData();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success
+                                ? 'Data restored successfully'
+                                : 'Restore failed',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
           ],
         ),
       ),
