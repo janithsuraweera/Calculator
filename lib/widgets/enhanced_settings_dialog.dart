@@ -502,6 +502,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
               Navigator.of(context).pop({
                 'theme': selectedTheme,
                 'accentColorIndex': selectedAccentColorIndex,
+                'vaultChanged': true, // Signal that vault state changed
               });
             }
           },

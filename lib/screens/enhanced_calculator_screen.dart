@@ -73,12 +73,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     ScreenshotDetector.initialize(context);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reload vault flag when returning to screen (e.g., from settings)
-    _loadVaultFlag();
-  }
+  // Removed didChangeDependencies - it was causing unnecessary reloads
+  // Vault flag will reload when settings dialog closes via callback
 
   @override
   void dispose() {
@@ -1011,6 +1007,10 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final currentAccentColorIndex = await ThemeManager.getAccentColorIndex();
 
     if (!mounted) return;
+    // Load vault flag before showing settings
+    await _loadVaultFlag();
+    if (!mounted) return;
+
     final result = await showDialog<Map<String, dynamic>>(
       context: this.context,
       builder: (context) => EnhancedSettingsDialog(
@@ -1022,8 +1022,10 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     if (result != null && mounted) {
       await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
       await ThemeManager.setAccentColorIndex(result['accentColorIndex'] as int);
-      // Notify user and stay on calculator UI; theme listener in main will update
-      await _loadVaultFlag();
+      // Reload vault flag if vault state changed
+      if (result['vaultChanged'] == true) {
+        await _loadVaultFlag();
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(this.context).showSnackBar(
         const SnackBar(content: Text('Settings saved successfully')),

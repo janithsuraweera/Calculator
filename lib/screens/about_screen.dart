@@ -81,6 +81,8 @@ class _AboutScreenState extends State<AboutScreen> {
                       width: 100,
                       height: 100,
                       fit: BoxFit.contain,
+                      cacheWidth: 200, // Optimize image loading
+                      cacheHeight: 200,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           width: 100,

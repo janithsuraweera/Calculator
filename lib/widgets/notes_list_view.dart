@@ -47,21 +47,27 @@ class _NotesListViewState extends State<NotesListView> {
 
   void _filterNotes() {
     final query = _searchController.text;
-    if (query.isEmpty) {
-      setState(() {
-        _filteredNotes = _notes;
-      });
-    } else {
-      final filtered = _notes.where((note) {
-        final searchLower = query.toLowerCase();
-        return note.title.toLowerCase().contains(searchLower) ||
-            note.content.toLowerCase().contains(searchLower) ||
-            note.tags.any((tag) => tag.toLowerCase().contains(searchLower));
-      }).toList();
-      setState(() {
-        _filteredNotes = filtered;
-      });
-    }
+    // Debounce filter to avoid excessive rebuilds
+    Future.microtask(() {
+      if (!mounted) return;
+      if (query.isEmpty) {
+        setState(() {
+          _filteredNotes = _notes;
+        });
+      } else {
+        final filtered = _notes.where((note) {
+          final searchLower = query.toLowerCase();
+          return note.title.toLowerCase().contains(searchLower) ||
+              note.content.toLowerCase().contains(searchLower) ||
+              note.tags.any((tag) => tag.toLowerCase().contains(searchLower));
+        }).toList();
+        if (mounted) {
+          setState(() {
+            _filteredNotes = filtered;
+          });
+        }
+      }
+    });
   }
 
   Future<void> _addNote() async {

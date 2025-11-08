@@ -77,6 +77,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   width: 150,
                   height: 150,
                   fit: BoxFit.contain,
+                  cacheWidth: 300, // Optimize image loading
+                  cacheHeight: 300,
                   errorBuilder: (context, error, stackTrace) {
                     // Fallback icon if image fails to load
                     return Container(

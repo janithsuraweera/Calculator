@@ -29,7 +29,8 @@ class CalculatorApp extends StatefulWidget {
   State<CalculatorApp> createState() => _CalculatorAppState();
 }
 
-class _CalculatorAppState extends State<CalculatorApp> {
+class _CalculatorAppState extends State<CalculatorApp>
+    with WidgetsBindingObserver {
   ThemeMode _themeMode = ThemeMode.light;
   int _accentColorIndex = 0;
   bool _isInitialized = false;
@@ -38,25 +39,25 @@ class _CalculatorAppState extends State<CalculatorApp> {
   @override
   void initState() {
     super.initState();
-    _loadThemeSettings();
-    // Listen for theme changes from settings
-    _setupThemeListener();
-  }
-
-  /// Setup listener for theme changes
-  void _setupThemeListener() {
-    // Continuously check for theme changes every 500ms
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _checkThemeChangesLoop();
+    WidgetsBinding.instance.addObserver(this);
+    // Load theme settings asynchronously to avoid blocking
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadThemeSettings();
     });
   }
 
-  /// Continuously check for theme changes
-  void _checkThemeChangesLoop() async {
-    while (mounted) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (!mounted) break;
-      await _checkThemeChanges();
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Only check theme when app becomes active (not continuously)
+    if (state == AppLifecycleState.resumed) {
+      _checkThemeChanges();
     }
   }
 
