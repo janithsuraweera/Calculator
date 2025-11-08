@@ -972,7 +972,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
     if (!mounted) return;
     final result = await showDialog<Map<String, dynamic>>(
-      context: context,
+      context: this.context,
       builder: (context) => EnhancedSettingsDialog(
         currentTheme: currentTheme,
         currentAccentColorIndex: currentAccentColorIndex,
@@ -985,7 +985,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       // Notify user and stay on calculator UI; theme listener in main will update
       await _loadVaultFlag();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(this.context).showSnackBar(
         const SnackBar(content: Text('Settings saved successfully')),
       );
     }
