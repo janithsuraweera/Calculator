@@ -12,6 +12,8 @@ import '../widgets/enhanced_settings_dialog.dart';
 import '../widgets/ar_camera_view.dart';
 import '../widgets/unit_converter_dialog.dart';
 import '../widgets/unit_converter_menu.dart';
+import '../widgets/vault_browser.dart';
+import '../widgets/vault_pin_dialog.dart';
 import '../services/calculator_engine.dart';
 import '../services/history_manager.dart';
 import '../services/theme_manager.dart';
@@ -245,17 +247,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           break;
 
         case '=':
-          // PIN shortcut to open Vault (e.g., 1234 + '=')
-          if (_expression == '1234') {
-            // Clear and navigate to vault tab if enabled
-            _expression = '';
-            _result = '0';
-            if (_vaultEnabled) {
-              _selectedTabIndex = _tabController.length - 1;
-            }
-            break;
-          }
-
           if (_expression.isNotEmpty) {
             _saveState();
             originalExpression = _expression;
@@ -497,14 +488,18 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
               context,
               icon: Icons.lock,
               label: 'Vault',
-              onPressed: () {
-                setState(() {
-                  // Jump to last tab (vault)
-                  _selectedTabIndex = (_tabController.length - 1).clamp(
-                    0,
-                    _tabController.length - 1,
-                  );
-                });
+              onPressed: () async {
+                // Authenticate before opening vault
+                final authenticated = await _authenticateVault();
+                if (authenticated && mounted) {
+                  setState(() {
+                    // Jump to last tab (vault)
+                    _selectedTabIndex = (_tabController.length - 1).clamp(
+                      0,
+                      _tabController.length - 1,
+                    );
+                  });
+                }
               },
               enabled: true,
             ),
@@ -772,30 +767,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                       onHistoryItemTap: _onHistoryItemTap,
                       onClearHistory: _clearHistory,
                     ),
-                    if (_vaultEnabled)
-                      FutureBuilder<List<CalculationHistory>>(
-                        future: VaultManager.getVaultEntries(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          final data = snapshot.data ?? [];
-                          if (data.isEmpty) {
-                            return const Center(child: Text('Vault is empty'));
-                          }
-                          return HistoryPanel(
-                            history: data,
-                            onHistoryItemTap: _onHistoryItemTap,
-                            onClearHistory: () async {
-                              await VaultManager.clearVault();
-                              if (mounted) setState(() {});
-                            },
-                          );
-                        },
-                      ),
+                    if (_vaultEnabled) const VaultBrowser(),
                   ],
                 ),
               ),
@@ -943,6 +915,55 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         _evaluateExpression();
       });
     }
+  }
+
+  /// Authenticate vault access
+  Future<bool> _authenticateVault() async {
+    final hasPin = await VaultManager.hasPin();
+    if (!hasPin) {
+      // First time setup - show PIN setup dialog
+      final result = await showDialog<bool>(
+        context: this.context,
+        builder: (context) => const VaultPinDialog(isSetup: true),
+      );
+      if (result == true) {
+        // Ask if user wants to enable biometric
+        final useBiometric = await showDialog<bool>(
+          context: this.context,
+          builder: (context) => AlertDialog(
+            title: const Text('Enable Biometric?'),
+            content: const Text(
+              'Do you want to use biometric authentication (fingerprint/face) to unlock the vault?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('No'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
+        );
+        if (useBiometric == true) {
+          final isAvailable = await VaultManager.isBiometricAvailable();
+          if (isAvailable) {
+            await VaultManager.setUseBiometric(true);
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+
+    // Authenticate with PIN or biometric
+    final authenticated = await showDialog<bool>(
+      context: this.context,
+      builder: (context) => const VaultPinDialog(isSetup: false),
+    );
+    return authenticated ?? false;
   }
 
   /// Show unit converter dialog

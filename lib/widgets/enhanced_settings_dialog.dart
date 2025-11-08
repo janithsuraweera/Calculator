@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/theme_manager.dart';
 import '../services/haptic_sound_manager.dart';
 import '../services/vault_manager.dart';
+import 'vault_pin_dialog.dart';
 
 /// Enhanced settings dialog with all advanced features
 class EnhancedSettingsDialog extends StatefulWidget {
@@ -178,12 +179,61 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             _buildSectionTitle(theme, 'Secure Vault'),
             SwitchListTile(
               title: const Text('Enable Secure Vault'),
-              subtitle: const Text('Lock sensitive calculations'),
+              subtitle: const Text('Lock sensitive files and calculations'),
               value: vaultEnabled,
-              onChanged: (value) {
-                setState(() {
-                  vaultEnabled = value;
-                });
+              onChanged: (value) async {
+                if (value) {
+                  // Enabling vault - check if PIN is set
+                  final hasPin = await VaultManager.hasPin();
+                  if (!hasPin) {
+                    // First time setup - show PIN setup dialog
+                    final result = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => const VaultPinDialog(isSetup: true),
+                    );
+                    if (result == true) {
+                      // Ask if user wants to enable biometric
+                      final useBiometric = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Enable Biometric?'),
+                          content: const Text(
+                            'Do you want to use biometric authentication (fingerprint/face) to unlock the vault?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('No'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Yes'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (useBiometric == true) {
+                        final isAvailable =
+                            await VaultManager.isBiometricAvailable();
+                        if (isAvailable) {
+                          await VaultManager.setUseBiometric(true);
+                        }
+                      }
+                      setState(() {
+                        vaultEnabled = true;
+                      });
+                    }
+                  } else {
+                    setState(() {
+                      vaultEnabled = true;
+                    });
+                  }
+                } else {
+                  // Disabling vault
+                  setState(() {
+                    vaultEnabled = false;
+                  });
+                }
               },
             ),
           ],
