@@ -11,6 +11,7 @@ class NotesManager {
     String title,
     String content, {
     DateTime? reminderDate,
+    String? reminderSound,
     List<String> tags = const [],
   }) async {
     try {
@@ -22,6 +23,7 @@ class NotesManager {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         reminderDate: reminderDate,
+        reminderSound: reminderSound,
         tags: tags,
       );
 

@@ -58,8 +58,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   @override
   void initState() {
     super.initState();
-    // Start with 3 tabs (Display, History, Notes). If vault is enabled, we'll
-    // expand to 4 after loading the flag.
+    // Start with 3 tabs (Display, History, Notes). Vault is hidden by default.
+    // It will only show if enabled in settings with password.
     _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
     _tabController.addListener(() {
       setState(() {
@@ -71,6 +71,13 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     _loadVaultFlag();
     // Initialize screenshot detector
     ScreenshotDetector.initialize(context);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload vault flag when returning to screen (e.g., from settings)
+    _loadVaultFlag();
   }
 
   @override

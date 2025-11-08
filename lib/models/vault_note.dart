@@ -6,6 +6,7 @@ class VaultNote {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final DateTime? reminderDate;
+  final String? reminderSound; // Sound for reminder notification
   final String? folderId;
   final bool isHidden;
   final List<String> tags;
@@ -17,6 +18,7 @@ class VaultNote {
     required this.createdAt,
     this.updatedAt,
     this.reminderDate,
+    this.reminderSound,
     this.folderId,
     this.isHidden = false,
     this.tags = const [],
@@ -30,6 +32,7 @@ class VaultNote {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'reminderDate': reminderDate?.toIso8601String(),
+      'reminderSound': reminderSound,
       'folderId': folderId,
       'isHidden': isHidden,
       'tags': tags,
@@ -48,6 +51,7 @@ class VaultNote {
       reminderDate: json['reminderDate'] != null
           ? DateTime.parse(json['reminderDate'] as String)
           : null,
+      reminderSound: json['reminderSound'] as String?,
       folderId: json['folderId'] as String?,
       isHidden: json['isHidden'] as bool? ?? false,
       tags: (json['tags'] as List<dynamic>?)?.cast<String>() ?? [],
@@ -61,6 +65,7 @@ class VaultNote {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? reminderDate,
+    String? reminderSound,
     String? folderId,
     bool? isHidden,
     List<String>? tags,
@@ -72,6 +77,7 @@ class VaultNote {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       reminderDate: reminderDate ?? this.reminderDate,
+      reminderSound: reminderSound ?? this.reminderSound,
       folderId: folderId ?? this.folderId,
       isHidden: isHidden ?? this.isHidden,
       tags: tags ?? this.tags,

@@ -192,12 +192,14 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             // Vault settings
             _buildSectionTitle(theme, 'Secure Vault'),
             SwitchListTile(
-              title: const Text('Enable Secure Vault'),
-              subtitle: const Text('Lock sensitive files and calculations'),
+              title: const Text('Show Secure Vault'),
+              subtitle: const Text(
+                'Show vault tab in calculator. Requires password to enable.',
+              ),
               value: vaultEnabled,
               onChanged: (value) async {
                 if (value) {
-                  // Enabling vault - check if PIN is set
+                  // Enabling vault - require password authentication
                   final hasPin = await VaultManager.hasPin();
                   if (!hasPin) {
                     // First time setup - show PIN setup dialog
@@ -233,20 +235,67 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                           await VaultManager.setUseBiometric(true);
                         }
                       }
+                      await VaultManager.setVaultEnabled(true);
                       setState(() {
                         vaultEnabled = true;
                       });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Vault enabled. Vault tab will appear in calculator.',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
                     }
                   } else {
-                    setState(() {
-                      vaultEnabled = true;
-                    });
+                    // PIN exists - require password to show vault
+                    final authenticated = await showDialog<bool>(
+                      context: context,
+                      builder: (context) =>
+                          const VaultPinDialog(isSetup: false),
+                    );
+                    if (authenticated == true) {
+                      await VaultManager.setVaultEnabled(true);
+                      setState(() {
+                        vaultEnabled = true;
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Vault enabled. Vault tab will appear in calculator.',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    }
                   }
                 } else {
-                  // Disabling vault
-                  setState(() {
-                    vaultEnabled = false;
-                  });
+                  // Disabling vault - require password confirmation
+                  final authenticated = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => const VaultPinDialog(isSetup: false),
+                  );
+                  if (authenticated == true) {
+                    await VaultManager.setVaultEnabled(false);
+                    setState(() {
+                      vaultEnabled = false;
+                    });
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Vault hidden. Vault tab will be removed from calculator.',
+                          ),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                    }
+                  }
                 }
               },
             ),
@@ -447,7 +496,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             await HapticSoundManager.setHapticIntensity(hapticIntensity);
             await HapticSoundManager.setSoundEnabled(soundEnabled);
             await HapticSoundManager.setSoundTheme(soundTheme);
-            await VaultManager.setVaultEnabled(vaultEnabled);
+            // Vault enabled state is already saved when toggled
 
             if (context.mounted) {
               Navigator.of(context).pop({

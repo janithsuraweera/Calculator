@@ -508,6 +508,7 @@ class VaultManager {
     String content, {
     String? folderId,
     DateTime? reminderDate,
+    String? reminderSound,
     List<String> tags = const [],
     bool isHidden = false,
   }) async {
@@ -520,6 +521,7 @@ class VaultManager {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         reminderDate: reminderDate,
+        reminderSound: reminderSound,
         folderId: folderId,
         isHidden: isHidden,
         tags: tags,

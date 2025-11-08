@@ -21,7 +21,17 @@ class _NoteEditorState extends State<NoteEditor> {
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _tagsController = TextEditingController();
   DateTime? _reminderDate;
+  String? _reminderSound;
   bool _isSaving = false;
+
+  // Available reminder sounds
+  static const List<Map<String, String>> reminderSounds = [
+    {'name': 'Default', 'value': 'default'},
+    {'name': 'Gentle', 'value': 'gentle'},
+    {'name': 'Alert', 'value': 'alert'},
+    {'name': 'Chime', 'value': 'chime'},
+    {'name': 'Bell', 'value': 'bell'},
+  ];
 
   @override
   void initState() {
@@ -31,6 +41,7 @@ class _NoteEditorState extends State<NoteEditor> {
       _contentController.text = widget.note!.content;
       _tagsController.text = widget.note!.tags.join(', ');
       _reminderDate = widget.note!.reminderDate;
+      _reminderSound = widget.note!.reminderSound;
     }
   }
 
@@ -94,6 +105,7 @@ class _NoteEditorState extends State<NoteEditor> {
           title: _titleController.text.trim(),
           content: _contentController.text.trim(),
           reminderDate: _reminderDate,
+          reminderSound: _reminderSound,
           tags: tags,
         );
         // Check if it's a vault note or main note
@@ -111,6 +123,7 @@ class _NoteEditorState extends State<NoteEditor> {
             _contentController.text.trim(),
             folderId: widget.folderId,
             reminderDate: _reminderDate,
+            reminderSound: _reminderSound,
             tags: tags,
           );
         } else {
@@ -119,6 +132,7 @@ class _NoteEditorState extends State<NoteEditor> {
             _titleController.text.trim(),
             _contentController.text.trim(),
             reminderDate: _reminderDate,
+            reminderSound: _reminderSound,
             tags: tags,
           );
         }
@@ -202,35 +216,68 @@ class _NoteEditorState extends State<NoteEditor> {
 
             // Reminder
             Card(
-              child: ListTile(
-                leading: Icon(
-                  Icons.notifications,
-                  color: _reminderDate != null
-                      ? colorScheme.primary
-                      : colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-                title: const Text('Reminder'),
-                subtitle: Text(
-                  _reminderDate != null
-                      ? '${_reminderDate!.toLocal().toString().split('.')[0]}'
-                      : 'No reminder set',
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_reminderDate != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() => _reminderDate = null);
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(
+                      Icons.notifications,
+                      color: _reminderDate != null
+                          ? colorScheme.primary
+                          : colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    title: const Text('Reminder'),
+                    subtitle: Text(
+                      _reminderDate != null
+                          ? '${_reminderDate!.toLocal().toString().split('.')[0]}'
+                          : 'No reminder set',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_reminderDate != null)
+                          IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _reminderDate = null;
+                                _reminderSound = null;
+                              });
+                            },
+                          ),
+                        IconButton(
+                          icon: const Icon(Icons.calendar_today),
+                          onPressed: _selectReminderDate,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_reminderDate != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: DropdownButtonFormField<String>(
+                        value: _reminderSound ?? 'default',
+                        decoration: const InputDecoration(
+                          labelText: 'Reminder Sound',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.music_note),
+                        ),
+                        items: reminderSounds.map((sound) {
+                          return DropdownMenuItem<String>(
+                            value: sound['value']!,
+                            child: Text(sound['name']!),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _reminderSound = value;
+                          });
                         },
                       ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: _selectReminderDate,
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
             const SizedBox(height: 16),

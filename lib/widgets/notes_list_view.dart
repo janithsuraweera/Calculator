@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/vault_note.dart';
 import '../services/notes_manager.dart';
+import '../services/vault_manager.dart';
 import 'note_editor.dart';
 
 /// Notes list view with search functionality
@@ -95,6 +96,80 @@ class _NotesListViewState extends State<NotesListView> {
     );
     if (result == true) {
       _loadNotes();
+    }
+  }
+
+  Future<void> _moveToVault(VaultNote note) async {
+    // Check if vault is enabled
+    final vaultEnabled = await VaultManager.isVaultEnabled();
+    if (!vaultEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enable Vault in settings first'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Move to Vault'),
+        content: Text('Move "${note.title}" to Vault as a secret note?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Move'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        // Save to vault
+        await VaultManager.saveNoteToVault(
+          note.title,
+          note.content,
+          reminderDate: note.reminderDate,
+          reminderSound: note.reminderSound,
+          tags: note.tags,
+        );
+        // Delete from main notes
+        await NotesManager.deleteNote(note.id);
+        _loadNotes();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Note moved to Vault'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to move note: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -335,6 +410,9 @@ class _NotesListViewState extends State<NotesListView> {
                   case 'edit':
                     _editNote(note);
                     break;
+                  case 'move_to_vault':
+                    _moveToVault(note);
+                    break;
                   case 'delete':
                     _deleteNote(note);
                     break;
@@ -351,6 +429,17 @@ class _NotesListViewState extends State<NotesListView> {
                     ],
                   ),
                 ),
+                const PopupMenuItem(
+                  value: 'move_to_vault',
+                  child: Row(
+                    children: [
+                      Icon(Icons.lock, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('Move to Vault'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
