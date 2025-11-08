@@ -5,6 +5,7 @@ import '../services/vault_manager.dart';
 import '../services/screenshot_detector.dart';
 import '../services/cloud_backup_service.dart';
 import 'vault_pin_dialog.dart';
+import 'custom_buttons_manager.dart';
 
 /// Enhanced settings dialog with all advanced features
 class EnhancedSettingsDialog extends StatefulWidget {
@@ -473,6 +474,30 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                 },
               ),
             ],
+            const SizedBox(height: 24),
+
+            // Custom Calculator Buttons
+            _buildSectionTitle(theme, 'Custom Calculator Buttons'),
+            ListTile(
+              leading: const Icon(Icons.add_circle),
+              title: const Text('Manage Custom Buttons'),
+              subtitle: const Text(
+                'Add custom buttons to scientific calculator',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const CustomButtonsManager(mode: 'scientific'),
+                  ),
+                );
+                if (result == true && mounted) {
+                  // Reload if needed
+                }
+              },
+            ),
           ],
         ),
       ),

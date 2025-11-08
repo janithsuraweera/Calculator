@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/calculation_history.dart';
+import 'step_by_step_view.dart';
 
 /// History panel widget showing calculation history
 /// History panel widget for displaying calculation history
@@ -132,6 +133,15 @@ class HistoryPanel extends StatelessWidget {
                     color: colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                   onTap: () => onHistoryItemTap(item.result),
+                  onLongPress: () {
+                    // Show step-by-step solution
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StepByStepView(historyItem: item),
+                      ),
+                    );
+                  },
                 ),
               );
             },

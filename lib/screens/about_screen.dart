@@ -152,16 +152,23 @@ class _AboutScreenState extends State<AboutScreen> {
             // App Features
             _buildSection(context, 'Features', Icons.star, [
               _buildFeatureItem(context, 'Basic & Scientific Calculator'),
+              _buildFeatureItem(context, 'Advanced Scientific Functions'),
+              _buildFeatureItem(context, 'Rad/Deg Mode Toggle'),
+              _buildFeatureItem(context, 'Inverse Functions (Inv Mode)'),
+              _buildFeatureItem(context, 'Constants: π, e'),
+              _buildFeatureItem(context, 'Ans (Previous Answer)'),
+              _buildFeatureItem(context, 'Custom Calculator Buttons'),
+              _buildFeatureItem(context, 'Step-by-Step Solutions'),
               _buildFeatureItem(context, 'Calculation History'),
               _buildFeatureItem(context, 'Undo/Redo Functionality'),
-              _buildFeatureItem(context, 'AR Mode (Camera Recognition)'),
               _buildFeatureItem(context, 'Unit Converter'),
               _buildFeatureItem(context, 'Currency Converter'),
-              _buildFeatureItem(context, 'Secure Vault Mode'),
+              _buildFeatureItem(context, 'Secure Vault with PIN/Biometric'),
+              _buildFeatureItem(context, 'Notes with Reminders'),
               _buildFeatureItem(context, 'Clipboard Support'),
               _buildFeatureItem(context, 'Dark/Light Themes'),
               _buildFeatureItem(context, 'Customizable Accent Colors'),
-              _buildFeatureItem(context, 'Haptic Feedback'),
+              _buildFeatureItem(context, 'Haptic Feedback & Sounds'),
               _buildFeatureItem(context, 'Sinhala & English Support'),
             ]),
             const SizedBox(height: 24),
@@ -176,7 +183,17 @@ class _AboutScreenState extends State<AboutScreen> {
               _buildHelpItem(
                 context,
                 'How to use Scientific Mode',
-                'Tap the science icon in the quick action bar to switch to scientific mode. Use sin, cos, tan, log, ln, sqrt, exp, factorial, and power functions.',
+                'Tap the science icon in the quick action bar to switch to scientific mode. Use sin, cos, tan, log, ln, sqrt, exp, factorial, and power functions. Toggle Rad/Deg mode for angle calculations. Use Inv button for inverse trigonometric functions (arcsin, arccos, arctan). Use π and e constants. Ans button inserts the previous calculation result.',
+              ),
+              _buildHelpItem(
+                context,
+                'Custom Calculator Buttons',
+                'Go to Settings → Manage Custom Buttons to add your own buttons to the scientific calculator. Define button label, action, mode (scientific/basic/all), and display order.',
+              ),
+              _buildHelpItem(
+                context,
+                'Step-by-Step Solutions',
+                'In History tab, long press on any calculation to view its step-by-step solution. See each step of the calculation process with detailed explanations.',
               ),
               _buildHelpItem(
                 context,
@@ -206,7 +223,12 @@ class _AboutScreenState extends State<AboutScreen> {
               _buildHelpItem(
                 context,
                 'Vault Mode',
-                'Enable vault mode in settings to securely store sensitive calculations. Access vault by entering PIN (1234) or through the Vault tab.',
+                'Enable vault mode in settings to securely store sensitive calculations, files, folders, and secret notes. Access vault with PIN or biometric authentication. Vault auto-hides when app closes for security.',
+              ),
+              _buildHelpItem(
+                context,
+                'Notes Feature',
+                'Use the Notes tab to create and manage notes with reminders. Set reminder dates, times, and sounds. Search notes, edit, delete, or move notes to vault for extra security.',
               ),
               _buildHelpItem(
                 context,

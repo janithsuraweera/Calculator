@@ -4,7 +4,7 @@ import 'package:math_expressions/math_expressions.dart';
 class CalculatorEngine {
   /// Evaluate an infix mathematical expression
   /// Supports: +, -, *, /, parentheses, decimals, and scientific functions
-  static String? evaluate(String expression) {
+  static String? evaluate(String expression, {bool isRadMode = true}) {
     try {
       if (expression.isEmpty) return null;
 
@@ -81,13 +81,19 @@ class CalculatorEngine {
   }
 
   /// Evaluate scientific function
-  static String? evaluateScientific(String function, String value) {
+  static String? evaluateScientific(
+    String function,
+    String value, {
+    bool isRadMode = true,
+  }) {
     try {
       double numValue = double.parse(value);
       double result;
 
-      // Convert degrees to radians for trigonometric functions
-      double radians = numValue * (3.141592653589793 / 180);
+      // Convert degrees to radians for trigonometric functions if in degree mode
+      double radians = isRadMode
+          ? numValue
+          : (numValue * (3.141592653589793 / 180));
 
       switch (function.toLowerCase()) {
         case 'sin':

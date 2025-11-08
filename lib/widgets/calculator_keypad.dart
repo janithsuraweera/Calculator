@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'calculator_button.dart';
+import '../models/custom_button.dart';
+import '../services/custom_button_manager.dart';
 
 /// Calculator keypad widget with basic and scientific modes
-class CalculatorKeypad extends StatelessWidget {
+class CalculatorKeypad extends StatefulWidget {
   final bool isScientificMode;
   final Function(String) onButtonPressed;
 
@@ -11,6 +13,41 @@ class CalculatorKeypad extends StatelessWidget {
     required this.isScientificMode,
     required this.onButtonPressed,
   });
+
+  @override
+  State<CalculatorKeypad> createState() => _CalculatorKeypadState();
+}
+
+class _CalculatorKeypadState extends State<CalculatorKeypad> {
+  List<CustomButton> _customButtons = [];
+  bool _isRadMode = true; // true for Radians, false for Degrees
+  bool _isInvMode = false; // Inverse function mode
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomButtons();
+  }
+
+  Future<void> _loadCustomButtons() async {
+    final mode = widget.isScientificMode ? 'scientific' : 'basic';
+    final buttons = await CustomButtonManager.getCustomButtons(mode);
+    if (mounted) {
+      setState(() {
+        _customButtons = buttons;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(CalculatorKeypad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isScientificMode != widget.isScientificMode) {
+      _loadCustomButtons();
+    }
+  }
+
+  late double rowSpacing;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +59,7 @@ class CalculatorKeypad extends StatelessWidget {
     final double padding = isPortrait
         ? (screenWidth < 360 ? 6.0 : 8.0)
         : (screenWidth < 600 ? 4.0 : 6.0);
-    final double rowSpacing = isPortrait
+    rowSpacing = isPortrait
         ? (screenWidth < 360 ? 6.0 : 8.0)
         : (screenWidth < 600 ? 4.0 : 6.0);
 
@@ -36,11 +73,18 @@ class CalculatorKeypad extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isScientificMode) ...[
+          if (widget.isScientificMode) ...[
+            _buildScientificRow0(context), // Rad/Deg, Inv, π, e, Ans
+            SizedBox(height: rowSpacing),
             _buildScientificRow1(context),
             SizedBox(height: rowSpacing),
             _buildScientificRow2(context),
             SizedBox(height: rowSpacing),
+            // Custom buttons row
+            if (_customButtons.isNotEmpty) ...[
+              _buildCustomButtonsRow(context),
+              SizedBox(height: rowSpacing),
+            ],
           ],
           _buildBasicRow1(context),
           SizedBox(height: rowSpacing),
@@ -55,13 +99,13 @@ class CalculatorKeypad extends StatelessWidget {
             children: [
               CalculatorButton(
                 label: '0',
-                onTap: () => onButtonPressed('0'),
+                onTap: () => widget.onButtonPressed('0'),
                 isLarge: true,
                 variant: ButtonVariant.digit,
               ),
               CalculatorButton(
                 label: '.',
-                onTap: () => onButtonPressed('.'),
+                onTap: () => widget.onButtonPressed('.'),
                 variant: ButtonVariant.operator,
               ),
               // Spacer to reserve space under the floating equals button
@@ -91,16 +135,134 @@ class CalculatorKeypad extends StatelessWidget {
     return content;
   }
 
+  // Scientific functions row 0: Rad/Deg, Inv, π, e, Ans, EXP, x!
+  Widget _buildScientificRow0(BuildContext context) {
+    return Row(
+      children: [
+        // Rad/Deg toggle button
+        Expanded(
+          child: CalculatorButton(
+            label: _isRadMode ? 'Rad' : 'Deg',
+            onTap: () {
+              setState(() {
+                _isRadMode = !_isRadMode;
+              });
+              widget.onButtonPressed(_isRadMode ? 'RAD' : 'DEG');
+            },
+            variant: ButtonVariant.action,
+            backgroundColor: _isRadMode
+                ? Theme.of(context).colorScheme.primary
+                : null,
+            textColor: _isRadMode
+                ? Theme.of(context).colorScheme.onPrimary
+                : null,
+          ),
+        ),
+        // Inv button
+        Expanded(
+          child: CalculatorButton(
+            label: 'Inv',
+            onTap: () {
+              setState(() {
+                _isInvMode = !_isInvMode;
+              });
+              widget.onButtonPressed('INV');
+            },
+            variant: ButtonVariant.action,
+            backgroundColor: _isInvMode
+                ? Theme.of(context).colorScheme.primary
+                : null,
+            textColor: _isInvMode
+                ? Theme.of(context).colorScheme.onPrimary
+                : null,
+          ),
+        ),
+        // π (Pi)
+        Expanded(
+          child: CalculatorButton(
+            label: 'π',
+            onTap: () => widget.onButtonPressed('π'),
+            variant: ButtonVariant.operator,
+          ),
+        ),
+        // e (Euler's number)
+        Expanded(
+          child: CalculatorButton(
+            label: 'e',
+            onTap: () => widget.onButtonPressed('e'),
+            variant: ButtonVariant.operator,
+          ),
+        ),
+        // Ans (Previous answer)
+        Expanded(
+          child: CalculatorButton(
+            label: 'Ans',
+            onTap: () => widget.onButtonPressed('ANS'),
+            variant: ButtonVariant.operator,
+          ),
+        ),
+      ],
+    );
+  }
+
   // Scientific functions row 1
   Widget _buildScientificRow1(BuildContext context) {
     return Row(
       children: [
-        CalculatorButton(label: 'sin', onTap: () => onButtonPressed('sin(')),
-        CalculatorButton(label: 'cos', onTap: () => onButtonPressed('cos(')),
-        CalculatorButton(label: 'tan', onTap: () => onButtonPressed('tan(')),
-        CalculatorButton(label: 'ln', onTap: () => onButtonPressed('ln(')),
-        CalculatorButton(label: 'log', onTap: () => onButtonPressed('log(')),
+        CalculatorButton(
+          label: 'sin',
+          onTap: () => widget.onButtonPressed('sin('),
+        ),
+        CalculatorButton(
+          label: 'cos',
+          onTap: () => widget.onButtonPressed('cos('),
+        ),
+        CalculatorButton(
+          label: 'tan',
+          onTap: () => widget.onButtonPressed('tan('),
+        ),
+        CalculatorButton(
+          label: 'ln',
+          onTap: () => widget.onButtonPressed('ln('),
+        ),
+        CalculatorButton(
+          label: 'log',
+          onTap: () => widget.onButtonPressed('log('),
+        ),
       ],
+    );
+  }
+
+  // Custom buttons row
+  Widget _buildCustomButtonsRow(BuildContext context) {
+    // Group buttons into rows of 5
+    final rows = <List<CustomButton>>[];
+    for (int i = 0; i < _customButtons.length; i += 5) {
+      rows.add(
+        _customButtons.sublist(
+          i,
+          i + 5 > _customButtons.length ? _customButtons.length : i + 5,
+        ),
+      );
+    }
+
+    return Column(
+      children: rows.map((row) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: rowSpacing),
+          child: Row(
+            children: row.map((button) {
+              return Expanded(
+                child: CalculatorButton(
+                  label: button.label,
+                  onTap: () => widget.onButtonPressed(button.action),
+                  variant: ButtonVariant.operator,
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -108,11 +270,20 @@ class CalculatorKeypad extends StatelessWidget {
   Widget _buildScientificRow2(BuildContext context) {
     return Row(
       children: [
-        CalculatorButton(label: '√', onTap: () => onButtonPressed('sqrt(')),
-        CalculatorButton(label: 'x²', onTap: () => onButtonPressed('^2')),
-        CalculatorButton(label: 'xʸ', onTap: () => onButtonPressed('^')),
-        CalculatorButton(label: 'eˣ', onTap: () => onButtonPressed('exp(')),
-        CalculatorButton(label: '!', onTap: () => onButtonPressed('!')),
+        CalculatorButton(
+          label: '√',
+          onTap: () => widget.onButtonPressed('sqrt('),
+        ),
+        CalculatorButton(
+          label: 'x²',
+          onTap: () => widget.onButtonPressed('^2'),
+        ),
+        CalculatorButton(label: 'xʸ', onTap: () => widget.onButtonPressed('^')),
+        CalculatorButton(
+          label: 'EXP',
+          onTap: () => widget.onButtonPressed('EXP'),
+        ),
+        CalculatorButton(label: 'x!', onTap: () => widget.onButtonPressed('!')),
       ],
     );
   }
@@ -123,23 +294,23 @@ class CalculatorKeypad extends StatelessWidget {
       children: [
         CalculatorButton(
           label: 'C',
-          onTap: () => onButtonPressed('AC'),
+          onTap: () => widget.onButtonPressed('AC'),
           variant: ButtonVariant.action,
         ),
         CalculatorButton(
           label: '%',
-          onTap: () => onButtonPressed('%'),
+          onTap: () => widget.onButtonPressed('%'),
           variant: ButtonVariant.operator,
         ),
         CalculatorButton(
           label: '⌫',
-          onTap: () => onButtonPressed('C'),
-          onLongPress: () => onButtonPressed('BACKSPACE'),
+          onTap: () => widget.onButtonPressed('C'),
+          onLongPress: () => widget.onButtonPressed('BACKSPACE'),
           variant: ButtonVariant.action,
         ),
         CalculatorButton(
           label: '÷',
-          onTap: () => onButtonPressed('÷'),
+          onTap: () => widget.onButtonPressed('÷'),
           variant: ButtonVariant.operator,
         ),
       ],
@@ -152,22 +323,22 @@ class CalculatorKeypad extends StatelessWidget {
       children: [
         CalculatorButton(
           label: '7',
-          onTap: () => onButtonPressed('7'),
+          onTap: () => widget.onButtonPressed('7'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '8',
-          onTap: () => onButtonPressed('8'),
+          onTap: () => widget.onButtonPressed('8'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '9',
-          onTap: () => onButtonPressed('9'),
+          onTap: () => widget.onButtonPressed('9'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '×',
-          onTap: () => onButtonPressed('×'),
+          onTap: () => widget.onButtonPressed('×'),
           variant: ButtonVariant.operator,
         ),
       ],
@@ -180,22 +351,22 @@ class CalculatorKeypad extends StatelessWidget {
       children: [
         CalculatorButton(
           label: '4',
-          onTap: () => onButtonPressed('4'),
+          onTap: () => widget.onButtonPressed('4'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '5',
-          onTap: () => onButtonPressed('5'),
+          onTap: () => widget.onButtonPressed('5'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '6',
-          onTap: () => onButtonPressed('6'),
+          onTap: () => widget.onButtonPressed('6'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '−',
-          onTap: () => onButtonPressed('−'),
+          onTap: () => widget.onButtonPressed('−'),
           variant: ButtonVariant.operator,
         ),
       ],
@@ -208,22 +379,22 @@ class CalculatorKeypad extends StatelessWidget {
       children: [
         CalculatorButton(
           label: '1',
-          onTap: () => onButtonPressed('1'),
+          onTap: () => widget.onButtonPressed('1'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '2',
-          onTap: () => onButtonPressed('2'),
+          onTap: () => widget.onButtonPressed('2'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '3',
-          onTap: () => onButtonPressed('3'),
+          onTap: () => widget.onButtonPressed('3'),
           variant: ButtonVariant.digit,
         ),
         CalculatorButton(
           label: '+',
-          onTap: () => onButtonPressed('+'),
+          onTap: () => widget.onButtonPressed('+'),
           variant: ButtonVariant.operator,
         ),
       ],
@@ -237,7 +408,7 @@ class CalculatorKeypad extends StatelessWidget {
       width: 72,
       height: 72,
       child: FloatingActionButton(
-        onPressed: () => onButtonPressed('='),
+        onPressed: () => widget.onButtonPressed('='),
         backgroundColor: const Color(0xFF25D366),
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),

@@ -39,6 +39,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   String _result = '0';
   bool _isScientificMode = false;
   bool _isError = false;
+  bool _isRadMode = true; // true for Radians, false for Degrees
+  bool _isInvMode = false; // Inverse function mode
+  String? _lastAnswer; // Store last answer for Ans button
   // Removed handwriting overlay state
   // Removed step-by-step toggle state
 
@@ -54,6 +57,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   // Gesture detection
   double _lastSwipeX = 0;
   double _lastSwipeY = 0;
+
+  // Key for CalculatorKeypad to force reload when custom buttons change
+  Key _keypadKey = UniqueKey();
 
   @override
   void initState() {
@@ -306,10 +312,14 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           if (_expression.isNotEmpty) {
             _saveState();
             originalExpression = _expression;
-            final evalResult = CalculatorEngine.evaluate(_expression);
+            final evalResult = CalculatorEngine.evaluate(
+              _expression,
+              isRadMode: _isRadMode,
+            );
             if (evalResult != null) {
               calcResult = evalResult;
               _result = calcResult!;
+              _lastAnswer = calcResult; // Store for Ans button
               _expression = calcResult!;
             } else {
               _result = 'Error';
@@ -318,9 +328,73 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           }
           break;
 
+        case 'RAD':
+          setState(() {
+            _isRadMode = true;
+          });
+          break;
+
+        case 'DEG':
+          setState(() {
+            _isRadMode = false;
+          });
+          break;
+
+        case 'INV':
+          setState(() {
+            _isInvMode = !_isInvMode;
+          });
+          break;
+
+        case 'ANS':
+          if (_lastAnswer != null) {
+            _expression += _lastAnswer!;
+            _evaluateExpression();
+          }
+          break;
+
+        case 'π':
+          _expression += 'π';
+          _evaluateExpression();
+          break;
+
+        case 'e':
+          _expression += 'e';
+          _evaluateExpression();
+          break;
+
+        case 'EXP':
+          _expression += 'E';
+          _evaluateExpression();
+          break;
+
         case 'sin(':
+          if (_isInvMode) {
+            _expression += 'arcsin(';
+          } else {
+            _expression += 'sin(';
+          }
+          _evaluateExpression();
+          break;
+
         case 'cos(':
+          if (_isInvMode) {
+            _expression += 'arccos(';
+          } else {
+            _expression += 'cos(';
+          }
+          _evaluateExpression();
+          break;
+
         case 'tan(':
+          if (_isInvMode) {
+            _expression += 'arctan(';
+          } else {
+            _expression += 'tan(';
+          }
+          _evaluateExpression();
+          break;
+
         case 'ln(':
         case 'log(':
         case 'sqrt(':
@@ -371,6 +445,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                 final factResult = CalculatorEngine.evaluateScientific(
                   'factorial',
                   numStr,
+                  isRadMode: _isRadMode,
                 );
                 if (factResult != null) {
                   _expression =
@@ -421,7 +496,10 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       return;
     }
 
-    final evalResult = CalculatorEngine.evaluate(_expression);
+    final evalResult = CalculatorEngine.evaluate(
+      _expression,
+      isRadMode: _isRadMode,
+    );
     if (evalResult != null) {
       _result = evalResult;
       _isError = false;
@@ -818,6 +896,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                   children: [
                     // Calculator tab
                     CalculatorKeypad(
+                      key: _keypadKey,
                       isScientificMode: _isScientificMode,
                       onButtonPressed: _onButtonPressed,
                     ),
@@ -985,10 +1064,12 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final hasPin = await VaultManager.hasPin();
     if (!hasPin) {
       // First time setup - show PIN setup dialog
+      if (!mounted) return false;
       final result = await showDialog<bool>(
         context: this.context,
         builder: (context) => const VaultPinDialog(isSetup: true),
       );
+      if (!mounted) return false;
       if (result == true) {
         // Ask if user wants to enable biometric
         final useBiometric = await showDialog<bool>(
@@ -1010,6 +1091,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
             ],
           ),
         );
+        if (!mounted) return false;
         if (useBiometric == true) {
           final isAvailable = await VaultManager.isBiometricAvailable();
           if (isAvailable) {
@@ -1022,6 +1104,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     }
 
     // Authenticate with PIN or biometric
+    if (!mounted) return false;
     final authenticated = await showDialog<bool>(
       context: this.context,
       builder: (context) => const VaultPinDialog(isSetup: false),
@@ -1074,6 +1157,10 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       if (result['vaultChanged'] == true) {
         await _loadVaultFlag();
       }
+      // Reload calculator keypad to show new custom buttons
+      setState(() {
+        _keypadKey = UniqueKey();
+      });
       if (!mounted) return;
       ScaffoldMessenger.of(this.context).showSnackBar(
         const SnackBar(content: Text('Settings saved successfully')),
