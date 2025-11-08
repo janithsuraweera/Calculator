@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import '../services/vault_manager.dart';
+import '../services/notes_manager.dart';
 import '../models/vault_file.dart';
 import '../models/vault_folder.dart';
 import '../models/vault_note.dart';
@@ -253,6 +254,66 @@ class _VaultBrowserState extends State<VaultBrowser> {
     );
     if (result == true) {
       _loadData();
+    }
+  }
+
+  Future<void> _moveToNormalNotes(VaultNote note) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Move to Normal Notes'),
+        content: Text('Move "${note.title}" back to normal notes?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Move'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        // Save to normal notes
+        await NotesManager.saveNote(
+          note.title,
+          note.content,
+          reminderDate: note.reminderDate,
+          reminderSound: note.reminderSound,
+          tags: note.tags,
+        );
+        // Delete from vault
+        await VaultManager.deleteNote(note.id);
+        _loadData();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Note moved to Normal Notes'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to move note: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -782,6 +843,9 @@ class _VaultBrowserState extends State<VaultBrowser> {
               case 'edit':
                 _editNote(note);
                 break;
+              case 'move_to_normal':
+                _moveToNormalNotes(note);
+                break;
               case 'hide':
                 await VaultManager.toggleNoteVisibility(note.id);
                 _loadData();
@@ -796,6 +860,16 @@ class _VaultBrowserState extends State<VaultBrowser> {
               value: 'edit',
               child: Row(
                 children: [Icon(Icons.edit), SizedBox(width: 8), Text('Edit')],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'move_to_normal',
+              child: Row(
+                children: [
+                  Icon(Icons.arrow_back, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('Move to Normal Notes'),
+                ],
               ),
             ),
             PopupMenuItem(

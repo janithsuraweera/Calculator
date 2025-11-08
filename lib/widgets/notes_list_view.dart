@@ -158,13 +158,15 @@ class _NotesListViewState extends State<NotesListView> {
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 8),
-                  Text('Note moved to Vault'),
+                  const Text('Note moved to Vault successfully'),
                 ],
               ),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 2),
             ),
           );
+          // Note: Vault browser will automatically show the note when user opens vault tab
+          // The note is now saved in vault and will appear when vault is accessed
         }
       } catch (e) {
         if (mounted) {

@@ -28,6 +28,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
   bool soundEnabled = true;
   String soundTheme = 'classic';
   bool vaultEnabled = false;
+  bool initialVaultState = false; // Track initial state to detect changes
   bool biometricEnabled = false;
   bool screenshotDetectionEnabled = false;
   bool cloudBackupEnabled = false;
@@ -45,6 +46,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
     final intensity = await HapticSoundManager.getHapticIntensity();
     final sound = await HapticSoundManager.isSoundEnabled();
     final theme = await HapticSoundManager.getSoundTheme();
+    // Load actual vault state (will be false on app start, but can be enabled)
     final vault = await VaultManager.isVaultEnabled();
     final biometric = await VaultManager.getUseBiometric();
     final screenshot = ScreenshotDetector.isEnabled();
@@ -56,6 +58,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
       soundEnabled = sound;
       soundTheme = theme;
       vaultEnabled = vault;
+      initialVaultState = vault; // Store initial state
       biometricEnabled = biometric;
       screenshotDetectionEnabled = screenshot;
       cloudBackupEnabled = cloudBackup;
@@ -194,12 +197,12 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             SwitchListTile(
               title: const Text('Show Secure Vault'),
               subtitle: const Text(
-                'Show vault tab in calculator. Requires password to enable.',
+                'Show vault tab in calculator. PIN will be required when accessing vault.',
               ),
               value: vaultEnabled,
               onChanged: (value) async {
                 if (value) {
-                  // Enabling vault - require password authentication
+                  // Enabling vault - check if PIN is set, if not setup PIN
                   final hasPin = await VaultManager.hasPin();
                   if (!hasPin) {
                     // First time setup - show PIN setup dialog
@@ -251,52 +254,41 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                       }
                     }
                   } else {
-                    // PIN exists - require password to show vault
-                    final authenticated = await showDialog<bool>(
-                      context: context,
-                      builder: (context) =>
-                          const VaultPinDialog(isSetup: false),
-                    );
-                    if (authenticated == true) {
-                      await VaultManager.setVaultEnabled(true);
-                      setState(() {
-                        vaultEnabled = true;
-                      });
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Vault enabled. Vault tab will appear in calculator.',
-                            ),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                } else {
-                  // Disabling vault - require password confirmation
-                  final authenticated = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => const VaultPinDialog(isSetup: false),
-                  );
-                  if (authenticated == true) {
-                    await VaultManager.setVaultEnabled(false);
+                    // PIN exists - just enable vault (no PIN required here)
+                    await VaultManager.setVaultEnabled(true);
                     setState(() {
-                      vaultEnabled = false;
+                      vaultEnabled = true;
                     });
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Vault hidden. Vault tab will be removed from calculator.',
+                            'Vault enabled. Vault tab will appear in calculator.',
                           ),
-                          backgroundColor: Colors.orange,
+                          backgroundColor: Colors.green,
                         ),
                       );
                     }
                   }
+                } else {
+                  // Disabling vault - no password required, just hide it
+                  await VaultManager.setVaultEnabled(false);
+                  setState(() {
+                    vaultEnabled = false;
+                  });
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Vault hidden. Vault tab will be removed from calculator.',
+                        ),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
                 }
+                // Always signal vault changed when toggled
+                // This will be handled in the Save button
               },
             ),
             const SizedBox(height: 24),
@@ -497,12 +489,14 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             await HapticSoundManager.setSoundEnabled(soundEnabled);
             await HapticSoundManager.setSoundTheme(soundTheme);
             // Vault enabled state is already saved when toggled
+            // Check if vault state changed from initial state
+            final vaultChanged = vaultEnabled != initialVaultState;
 
             if (context.mounted) {
               Navigator.of(context).pop({
                 'theme': selectedTheme,
                 'accentColorIndex': selectedAccentColorIndex,
-                'vaultChanged': true, // Signal that vault state changed
+                'vaultChanged': vaultChanged, // Signal if vault state changed
               });
             }
           },

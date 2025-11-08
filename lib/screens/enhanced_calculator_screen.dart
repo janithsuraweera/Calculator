@@ -34,7 +34,7 @@ class EnhancedCalculatorScreen extends StatefulWidget {
 }
 
 class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   String _expression = '';
   String _result = '0';
   bool _isScientificMode = false;
@@ -58,8 +58,9 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   @override
   void initState() {
     super.initState();
-    // Start with 3 tabs (Display, History, Notes). Vault is hidden by default.
-    // It will only show if enabled in settings with password.
+    // Start with 3 tabs (Display, History, Notes). Vault will be added if enabled.
+    // On app start, vault is always hidden (auto-hide on app close).
+    // User can enable it from settings.
     _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
     _tabController.addListener(() {
       setState(() {
@@ -68,16 +69,59 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     });
     _loadHistory();
     _checkClipboard();
+    // Ensure vault is hidden on app start
+    VaultManager.setVaultEnabled(false);
     _loadVaultFlag();
     // Initialize screenshot detector
     ScreenshotDetector.initialize(context);
+    // Add lifecycle observer to auto-hide vault when app closes
+    WidgetsBinding.instance.addObserver(this);
   }
 
   // Removed didChangeDependencies - it was causing unnecessary reloads
   // Vault flag will reload when settings dialog closes via callback
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Auto-hide vault when app goes to background or is closed
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _autoHideVault();
+    }
+  }
+
+  /// Auto-hide vault when app is closed or goes to background
+  Future<void> _autoHideVault() async {
+    // Always hide vault when app goes to background or closes
+    await VaultManager.setVaultEnabled(false);
+    if (mounted && _vaultEnabled) {
+      setState(() {
+        _vaultEnabled = false;
+        // Update tab controller to remove vault tab
+        final newLen = 3; // Display, History, Notes
+        if (_tabController.length != newLen) {
+          final oldIndex = _selectedTabIndex.clamp(0, newLen - 1);
+          _tabController.dispose();
+          _tabController = TabController(
+            length: newLen,
+            vsync: this,
+            initialIndex: oldIndex,
+          );
+          _tabController.addListener(() {
+            setState(() {
+              _selectedTabIndex = _tabController.index;
+            });
+          });
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabController.dispose();
     // Reset orientation lock when disposing
     SystemChrome.setPreferredOrientations([
@@ -111,11 +155,15 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   }
 
   Future<void> _loadVaultFlag() async {
+    // Load vault state - on app start it will be false (auto-hide on close)
+    // But if user enables from settings, it will be true
     final enabled = await VaultManager.isVaultEnabled();
     if (!mounted) return;
     setState(() {
       _vaultEnabled = enabled;
-      final newLen = _vaultEnabled ? 4 : 3; // Display, History, Notes, Vault
+      final newLen = _vaultEnabled
+          ? 4
+          : 3; // Display, History, Notes, Vault (if enabled)
       if (_tabController.length != newLen) {
         final oldIndex = _selectedTabIndex.clamp(0, newLen - 1);
         _tabController.dispose();

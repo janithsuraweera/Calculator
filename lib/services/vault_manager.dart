@@ -21,6 +21,7 @@ class VaultManager {
   static final LocalAuthentication _localAuth = LocalAuthentication();
 
   /// Check if vault is enabled
+  /// Note: Returns false on app start, but can be enabled from settings
   static Future<bool> isVaultEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_vaultEnabledKey) ?? false;
