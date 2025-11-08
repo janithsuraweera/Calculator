@@ -30,7 +30,7 @@ class EnhancedCalculatorScreen extends StatefulWidget {
 }
 
 class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   String _expression = '';
   String _result = '0';
   bool _isScientificMode = false;
