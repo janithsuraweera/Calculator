@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 import '../models/calculation_history.dart';
 import '../models/vault_file.dart';
 import '../models/vault_folder.dart';
+import '../models/vault_note.dart';
 
 /// Enhanced vault manager with files, folders, PIN, and biometric authentication
 class VaultManager {
@@ -16,6 +17,7 @@ class VaultManager {
   static const String _useBiometricKey = 'vault_use_biometric';
   static const String _filesKey = 'vault_files';
   static const String _foldersKey = 'vault_folders';
+  static const String _notesKey = 'vault_notes';
   static final LocalAuthentication _localAuth = LocalAuthentication();
 
   /// Check if vault is enabled
@@ -493,6 +495,230 @@ class VaultManager {
     }
   }
 
+  // Note management functions
+  /// Save note to vault
+  static Future<VaultNote?> saveNoteToVault(
+    String title,
+    String content, {
+    String? folderId,
+    DateTime? reminderDate,
+    List<String> tags = const [],
+    bool isHidden = false,
+  }) async {
+    try {
+      final noteId = DateTime.now().millisecondsSinceEpoch.toString();
+      final note = VaultNote(
+        id: noteId,
+        title: title,
+        content: content,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        reminderDate: reminderDate,
+        folderId: folderId,
+        isHidden: isHidden,
+        tags: tags,
+      );
+
+      await _saveNoteMetadata(note);
+      return note;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Update note
+  static Future<bool> updateNote(VaultNote note) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notesJson = prefs.getString(_notesKey);
+
+      if (notesJson == null || notesJson.isEmpty) {
+        return false;
+      }
+
+      final List<dynamic> jsonList = jsonDecode(notesJson);
+      List<VaultNote> notes = jsonList
+          .map((json) => VaultNote.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      final index = notes.indexWhere((n) => n.id == note.id);
+      if (index == -1) return false;
+
+      notes[index] = note.copyWith(updatedAt: DateTime.now());
+      final jsonList2 = notes.map((n) => n.toJson()).toList();
+      await prefs.setString(_notesKey, jsonEncode(jsonList2));
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Save note metadata
+  static Future<void> _saveNoteMetadata(VaultNote note) async {
+    final prefs = await SharedPreferences.getInstance();
+    final notesJson = prefs.getString(_notesKey);
+    List<VaultNote> notes = [];
+
+    if (notesJson != null && notesJson.isNotEmpty) {
+      final List<dynamic> jsonList = jsonDecode(notesJson);
+      notes = jsonList
+          .map((json) => VaultNote.fromJson(json as Map<String, dynamic>))
+          .toList();
+    }
+
+    notes.add(note);
+    final jsonList = notes.map((n) => n.toJson()).toList();
+    await prefs.setString(_notesKey, jsonEncode(jsonList));
+  }
+
+  /// Get all notes
+  static Future<List<VaultNote>> getVaultNotes({
+    String? folderId,
+    bool includeHidden = false,
+    bool onlyWithReminders = false,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notesJson = prefs.getString(_notesKey);
+
+      if (notesJson == null || notesJson.isEmpty) {
+        return [];
+      }
+
+      final List<dynamic> jsonList = jsonDecode(notesJson);
+      List<VaultNote> notes = jsonList
+          .map((json) => VaultNote.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      // Filter by folder
+      if (folderId != null) {
+        notes = notes.where((n) => n.folderId == folderId).toList();
+      }
+
+      // Filter by reminders
+      if (onlyWithReminders) {
+        notes = notes.where((n) => n.hasReminder).toList();
+      }
+
+      // Filter hidden notes
+      if (!includeHidden) {
+        notes = notes.where((n) => !n.isHidden).toList();
+      }
+
+      // Sort by reminder date (due first) or created date
+      notes.sort((a, b) {
+        if (a.hasReminder && b.hasReminder) {
+          return a.reminderDate!.compareTo(b.reminderDate!);
+        } else if (a.hasReminder) {
+          return -1;
+        } else if (b.hasReminder) {
+          return 1;
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
+
+      return notes;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Delete note
+  static Future<bool> deleteNote(String noteId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notesJson = prefs.getString(_notesKey);
+
+      if (notesJson == null || notesJson.isEmpty) {
+        return false;
+      }
+
+      final List<dynamic> jsonList = jsonDecode(notesJson);
+      List<VaultNote> notes = jsonList
+          .map((json) => VaultNote.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      notes.removeWhere((n) => n.id == noteId);
+      final jsonList2 = notes.map((n) => n.toJson()).toList();
+      await prefs.setString(_notesKey, jsonEncode(jsonList2));
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Toggle note visibility
+  static Future<bool> toggleNoteVisibility(String noteId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notesJson = prefs.getString(_notesKey);
+
+      if (notesJson == null || notesJson.isEmpty) {
+        return false;
+      }
+
+      final List<dynamic> jsonList = jsonDecode(notesJson);
+      List<VaultNote> notes = jsonList
+          .map((json) => VaultNote.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      final index = notes.indexWhere((n) => n.id == noteId);
+      if (index == -1) return false;
+
+      notes[index] = notes[index].copyWith(isHidden: !notes[index].isHidden);
+      final jsonList2 = notes.map((n) => n.toJson()).toList();
+      await prefs.setString(_notesKey, jsonEncode(jsonList2));
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Export notes to Gmail (as email body)
+  static Future<String> exportNotesToEmail() async {
+    try {
+      final notes = await getVaultNotes(includeHidden: false);
+      if (notes.isEmpty) {
+        return '';
+      }
+
+      final buffer = StringBuffer();
+      buffer.writeln('VAULT NOTES BACKUP');
+      buffer.writeln('Generated: ${DateTime.now().toIso8601String()}');
+      buffer.writeln('');
+      buffer.writeln('Total Notes: ${notes.length}');
+      buffer.writeln('');
+
+      for (final note in notes) {
+        buffer.writeln('=' * 50);
+        buffer.writeln('Title: ${note.title}');
+        buffer.writeln('Created: ${note.createdAt.toIso8601String()}');
+        if (note.updatedAt != null) {
+          buffer.writeln('Updated: ${note.updatedAt!.toIso8601String()}');
+        }
+        if (note.reminderDate != null) {
+          buffer.writeln('Reminder: ${note.reminderDate!.toIso8601String()}');
+        }
+        if (note.tags.isNotEmpty) {
+          buffer.writeln('Tags: ${note.tags.join(", ")}');
+        }
+        buffer.writeln('');
+        buffer.writeln('Content:');
+        buffer.writeln(note.content);
+        buffer.writeln('');
+        buffer.writeln('=' * 50);
+        buffer.writeln('');
+      }
+
+      return buffer.toString();
+    } catch (e) {
+      return '';
+    }
+  }
+
   /// Clear vault
   static Future<void> clearVault() async {
     final authenticated = await authenticate();
@@ -503,6 +729,7 @@ class VaultManager {
       await prefs.remove(_vaultKey);
       await prefs.remove(_filesKey);
       await prefs.remove(_foldersKey);
+      await prefs.remove(_notesKey);
 
       // Clear vault directory
       final vaultDir = await getVaultDirectory();

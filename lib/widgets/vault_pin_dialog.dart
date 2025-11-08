@@ -28,6 +28,7 @@ class _VaultPinDialogState extends State<VaultPinDialog> {
   String _pin = '';
   String _confirmPin = '';
   String _oldPin = '';
+  String _firstPin = ''; // Store first PIN for comparison
   bool _isConfirming = false;
   bool _isVerifyingOldPin = false;
   String? _errorMessage;
@@ -87,8 +88,9 @@ class _VaultPinDialogState extends State<VaultPinDialog> {
             // Verify old PIN first
             _verifyOldPin();
           } else if (!_isConfirming) {
-            // First new PIN entered, now confirm
+            // First new PIN entered, save it and move to confirm
             setState(() {
+              _firstPin = _pin; // Save first PIN
               _isConfirming = true;
               _pin = '';
               for (final controller in _pinControllers) {
@@ -102,8 +104,9 @@ class _VaultPinDialogState extends State<VaultPinDialog> {
           }
         } else if (widget.isSetup) {
           if (!_isConfirming) {
-            // First PIN entered, now confirm
+            // First PIN entered, save it and move to confirm
             setState(() {
+              _firstPin = _pin; // Save first PIN
               _isConfirming = true;
               _pin = '';
               for (final controller in _pinControllers) {
@@ -178,8 +181,9 @@ class _VaultPinDialogState extends State<VaultPinDialog> {
 
   Future<void> _verifyPin() async {
     if (widget.isSetup || widget.isChangePin) {
-      if (_pin == _confirmPin) {
-        await VaultManager.setPin(_pin);
+      // Compare first PIN with confirm PIN
+      if (_firstPin == _confirmPin) {
+        await VaultManager.setPin(_confirmPin);
         if (mounted) {
           Navigator.pop(context, true);
           widget.onSuccess?.call();
@@ -187,6 +191,7 @@ class _VaultPinDialogState extends State<VaultPinDialog> {
       } else {
         setState(() {
           _errorMessage = 'PINs do not match. Please try again.';
+          _firstPin = '';
           _pin = '';
           _confirmPin = '';
           _isConfirming = false;
