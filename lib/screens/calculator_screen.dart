@@ -358,6 +358,28 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
+    // Keep controller length and tabs in sync to avoid startup mismatches
+    final List<Tab> tabs = [
+      Tab(icon: const Icon(Icons.calculate), text: localizations.display),
+      Tab(icon: const Icon(Icons.history), text: localizations.history),
+      if (_vaultEnabled) const Tab(icon: Icon(Icons.lock), text: 'Vault'),
+    ];
+    if (_tabController.length != tabs.length) {
+      final newLen = tabs.length;
+      final newIndex = _selectedTabIndex.clamp(0, newLen - 1);
+      _tabController.dispose();
+      _tabController = TabController(
+        length: newLen,
+        vsync: this,
+        initialIndex: newIndex,
+      );
+      _tabController.addListener(() {
+        setState(() {
+          _selectedTabIndex = _tabController.index;
+        });
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calculator'),
@@ -434,21 +456,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
             ),
             // Tabs for Calculator and History
             // Calculator සහ History tabs
-            TabBar(
-              controller: _tabController,
-              tabs: [
-                Tab(
-                  icon: const Icon(Icons.calculate),
-                  text: localizations.display,
-                ),
-                Tab(
-                  icon: const Icon(Icons.history),
-                  text: localizations.history,
-                ),
-                if (_vaultEnabled)
-                  const Tab(icon: Icon(Icons.lock), text: 'Vault'),
-              ],
-            ),
+            TabBar(controller: _tabController, tabs: tabs),
             // Tab content
             // Tab content
             Expanded(

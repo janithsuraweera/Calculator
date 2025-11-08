@@ -465,66 +465,93 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            _buildModeToggleButton(context, localizations),
-            SizedBox(width: isPortrait ? 10 : 6),
-            // Unit converter quick button next to mode toggle
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          _buildModeToggleButton(context, localizations),
+          SizedBox(width: isPortrait ? 8 : 6),
+          // Unit converter quick button
+          _buildActionButton(
+            context,
+            icon: Icons.swap_horiz,
+            label: 'Units',
+            onPressed: () => showUnitConverterMenu(context, _showUnitConverter),
+            enabled: true,
+          ),
+          SizedBox(width: isPortrait ? 8 : 6),
+          _buildActionButton(
+            context,
+            icon: Icons.currency_exchange,
+            label: 'Currency',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => const CurrencyConverterDialog(),
+              );
+            },
+            enabled: true,
+          ),
+          if (_vaultEnabled) ...[
+            SizedBox(width: isPortrait ? 8 : 6),
             _buildActionButton(
               context,
-              icon: Icons.swap_horiz,
-              label: 'Units',
-              onPressed: () =>
-                  showUnitConverterMenu(context, _showUnitConverter),
+              icon: Icons.lock,
+              label: 'Vault',
+              onPressed: () {
+                setState(() {
+                  // Jump to last tab (vault)
+                  _selectedTabIndex = (_tabController.length - 1).clamp(
+                    0,
+                    _tabController.length - 1,
+                  );
+                });
+              },
               enabled: true,
             ),
-            // SizedBox(width: isPortrait ? 10 : 6),
-            // // Step-by-step toggle quick button
-            // _buildActionButton(
-            //   context,
-            //   icon: Icons.info_outline,
-            //   label: 'Steps',
-            //   onPressed: () {
-            //     setState(() {
-            //       _showStepByStep = !_showStepByStep;
-            //     });
-            //   },
-            //   enabled: _expression.isNotEmpty,
-            // ),
-            // SizedBox(width: isPortrait ? 10 : 6),
-            // // Handwriting input quick toggle
-            // _buildActionButton(
-            //   context,
-            //   icon: Icons.edit,
-            //   label: 'Write',
-            //   onPressed: () {
-            //     setState(() {
-            //       _showHandwriting = !_showHandwriting;
-            //     });
-            //   },
-            //   enabled: true,
-            // ),
-            SizedBox(width: isPortrait ? 10 : 6),
-            _buildActionButton(
-              context,
-              icon: Icons.undo,
-              label: localizations.undo,
-              onPressed: _undo,
-              enabled: _undoStack.isNotEmpty,
-            ),
-            SizedBox(width: isPortrait ? 10 : 6),
-            _buildActionButton(
-              context,
-              icon: Icons.redo,
-              label: localizations.redo,
-              onPressed: _redo,
-              enabled: _redoStack.isNotEmpty,
-            ),
           ],
-        ),
+          // SizedBox(width: isPortrait ? 10 : 6),
+          // // Step-by-step toggle quick button
+          // _buildActionButton(
+          //   context,
+          //   icon: Icons.info_outline,
+          //   label: 'Steps',
+          //   onPressed: () {
+          //     setState(() {
+          //       _showStepByStep = !_showStepByStep;
+          //     });
+          //   },
+          //   enabled: _expression.isNotEmpty,
+          // ),
+          // SizedBox(width: isPortrait ? 10 : 6),
+          // // Handwriting input quick toggle
+          // _buildActionButton(
+          //   context,
+          //   icon: Icons.edit,
+          //   label: 'Write',
+          //   onPressed: () {
+          //     setState(() {
+          //       _showHandwriting = !_showHandwriting;
+          //     });
+          //   },
+          //   enabled: true,
+          // ),
+          SizedBox(width: isPortrait ? 8 : 6),
+          _buildActionButton(
+            context,
+            icon: Icons.undo,
+            label: localizations.undo,
+            onPressed: _undo,
+            enabled: _undoStack.isNotEmpty,
+          ),
+          SizedBox(width: isPortrait ? 8 : 6),
+          _buildActionButton(
+            context,
+            icon: Icons.redo,
+            label: localizations.redo,
+            onPressed: _redo,
+            enabled: _redoStack.isNotEmpty,
+          ),
+        ],
       ),
     );
   }
@@ -539,57 +566,61 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final mediaQuery = MediaQuery.of(context);
     final bool compact = mediaQuery.size.width < 380;
 
-    return InkWell(
-      onTap: _toggleScientificMode,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 12 : 16,
-          vertical: compact ? 8 : 10,
-        ),
-        decoration: BoxDecoration(
-          gradient: _isScientificMode
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.primary,
-                    colorScheme.primary.withValues(alpha: 0.8),
-                  ],
-                )
-              : null,
-          color: _isScientificMode ? null : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _isScientificMode
-                ? colorScheme.primary
-                : colorScheme.outline.withValues(alpha: 0.3),
-            width: _isScientificMode ? 2.5 : 1.5,
+    return Expanded(
+      child: InkWell(
+        onTap: _toggleScientificMode,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 8 : 10,
           ),
-          boxShadow: _isScientificMode
-              ? [
-                  BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _isScientificMode ? Icons.science : Icons.calculate,
+          decoration: BoxDecoration(
+            gradient: _isScientificMode
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.primary,
+                      colorScheme.primary.withValues(alpha: 0.8),
+                    ],
+                  )
+                : null,
+            color: _isScientificMode
+                ? null
+                : colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
               color: _isScientificMode
-                  ? colorScheme.onPrimary
-                  : colorScheme.onSurface,
-              size: 22,
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.3),
+              width: _isScientificMode ? 2.5 : 1.5,
             ),
-            // Text label hidden: icon-only quick action
-          ],
+            boxShadow: _isScientificMode
+                ? [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _isScientificMode ? Icons.science : Icons.calculate,
+                color: _isScientificMode
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface,
+                size: 22,
+              ),
+              // Text label hidden: icon-only quick action
+            ],
+          ),
         ),
       ),
     );
@@ -606,55 +637,57 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return InkWell(
-      onTap: enabled ? onPressed : null,
-      borderRadius: BorderRadius.circular(16),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: enabled
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.secondaryContainer,
-                    colorScheme.secondaryContainer.withValues(alpha: 0.7),
-                  ],
-                )
-              : null,
-          color: enabled
-              ? null
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
+    return Expanded(
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: enabled
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.secondaryContainer,
+                      colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                    ],
+                  )
+                : null,
             color: enabled
-                ? colorScheme.secondary.withValues(alpha: 0.6)
-                : colorScheme.outline.withValues(alpha: 0.1),
-            width: enabled ? 2 : 1,
-          ),
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: colorScheme.secondary.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
+                ? null
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
               color: enabled
-                  ? colorScheme.onSecondaryContainer
-                  : colorScheme.onSurface.withValues(alpha: 0.3),
-              size: 20,
+                  ? colorScheme.secondary.withValues(alpha: 0.6)
+                  : colorScheme.outline.withValues(alpha: 0.1),
+              width: enabled ? 2 : 1,
             ),
-            // Text label hidden: icon-only quick action
-          ],
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: colorScheme.secondary.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: enabled
+                    ? colorScheme.onSecondaryContainer
+                    : colorScheme.onSurface.withValues(alpha: 0.3),
+                size: 22,
+              ),
+              // Text label hidden: icon-only quick action
+            ],
+          ),
         ),
       ),
     );
@@ -665,6 +698,37 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final localizations = AppLocalizations.of(context)!;
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
+
+    // Desired tabs for current state
+    final List<Tab> tabs = [
+      Tab(
+        icon: const Icon(Icons.calculate),
+        text: screenWidth < 360 ? null : localizations.display,
+      ),
+      Tab(
+        icon: const Icon(Icons.history),
+        text: screenWidth < 360 ? null : localizations.history,
+      ),
+      if (_vaultEnabled)
+        Tab(
+          icon: const Icon(Icons.lock),
+          text: screenWidth < 360 ? null : 'Vault',
+        ),
+    ];
+    // Until async flag updates controller length, only show as many tabs
+    // as the controller currently manages to avoid mismatch.
+    final int effectiveLen = _tabController.length.clamp(1, tabs.length);
+    final List<Tab> displayedTabs = tabs.sublist(0, effectiveLen);
+    final int clampedIndex = _selectedTabIndex.clamp(0, effectiveLen - 1);
+    if (clampedIndex != _selectedTabIndex) {
+      // Keep index in range without recreating the controller in build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _selectedTabIndex = clampedIndex;
+        });
+      });
+    }
 
     return GestureDetector(
       onPanStart: _handleSwipeStart,
@@ -691,24 +755,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
               _buildQuickActionBar(context, localizations),
               // Handwriting input overlay removed
               // Tabs
-              TabBar(
-                controller: _tabController,
-                tabs: [
-                  Tab(
-                    icon: const Icon(Icons.calculate),
-                    text: screenWidth < 360 ? null : localizations.display,
-                  ),
-                  Tab(
-                    icon: const Icon(Icons.history),
-                    text: screenWidth < 360 ? null : localizations.history,
-                  ),
-                  if (_vaultEnabled)
-                    Tab(
-                      icon: const Icon(Icons.lock),
-                      text: screenWidth < 360 ? null : 'Vault',
-                    ),
-                ],
-              ),
+              TabBar(controller: _tabController, tabs: displayedTabs),
               // Tab content
               Expanded(
                 child: IndexedStack(
@@ -770,12 +817,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         tooltip: 'More',
         onSelected: (value) {
           switch (value) {
-            case 'currency':
-              showDialog(
-                context: context,
-                builder: (context) => const CurrencyConverterDialog(),
-              );
-              break;
             case 'settings':
               _showSettings(context, localizations);
               break;
@@ -791,16 +832,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
           }
         },
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'currency',
-            child: Row(
-              children: [
-                const Icon(Icons.currency_exchange, size: 20),
-                const SizedBox(width: 8),
-                const Text('Currency Converter'),
-              ],
-            ),
-          ),
           PopupMenuItem(
             value: 'settings',
             child: Row(
@@ -919,6 +950,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     final value = double.tryParse(
       _result == '0' || _result == 'Error' ? '' : _result,
     );
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) =>
@@ -951,6 +983,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       await ThemeManager.setThemeMode(result['theme'] as ThemeMode);
       await ThemeManager.setAccentColorIndex(result['accentColorIndex'] as int);
       // Notify user and stay on calculator UI; theme listener in main will update
+      await _loadVaultFlag();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Settings saved successfully')),
