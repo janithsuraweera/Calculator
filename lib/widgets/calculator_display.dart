@@ -26,12 +26,14 @@ class CalculatorDisplay extends StatelessWidget {
     final double padding = isPortrait
         ? (screenWidth < 360 ? 16.0 : (screenWidth < 600 ? 20.0 : 24.0))
         : (screenWidth < 600 ? 12.0 : 16.0);
+    // Expression is LARGE (shows input calculation)
     final double expressionFontSize = isPortrait
-        ? (screenWidth < 360 ? 18.0 : (screenWidth < 600 ? 20.0 : 24.0))
-        : (screenWidth < 600 ? 16.0 : 18.0);
-    final double resultFontSize = isPortrait
         ? (screenWidth < 360 ? 36.0 : (screenWidth < 600 ? 42.0 : 48.0))
         : (screenWidth < 600 ? 28.0 : 32.0);
+    // Result is SMALL (shows final answer)
+    final double resultFontSize = isPortrait
+        ? (screenWidth < 360 ? 18.0 : (screenWidth < 600 ? 20.0 : 24.0))
+        : (screenWidth < 600 ? 16.0 : 18.0);
 
     // Adjust height based on orientation and screen size
     // Reduce height so the keypad has more space and avoids overflow
@@ -64,36 +66,40 @@ class CalculatorDisplay extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Expression display
+          // Expression display (LARGE - top area)
+          // Shows the full expression including operators (e.g., "12+3+6-8")
           if (expression.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(bottom: padding * 0.33),
+              padding: EdgeInsets.only(bottom: padding * 0.4),
               child: Text(
                 expression,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                style: theme.textTheme.displayMedium?.copyWith(
+                  color: colorScheme.onSurface,
                   fontSize: expressionFontSize,
+                  fontWeight: FontWeight.bold,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                textScaler: const TextScaler.linear(
-                  1.0,
-                ), // Prevent system font scaling
+                textAlign: TextAlign.right,
+                textScaler: const TextScaler.linear(1.0),
               ),
             ),
-          // Result display
+          // Result display (SMALL - bottom area)
+          // Shows only the calculated result, no operators (e.g., "13")
+          // Uses accent color to distinguish from expression
           Text(
             result.isEmpty ? '0' : result,
-            style: theme.textTheme.displayMedium?.copyWith(
-              color: isError ? colorScheme.error : colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: isError
+                  ? colorScheme.error
+                  : colorScheme.primary, // Use primary/accent color for result
+              fontWeight: FontWeight.normal,
               fontSize: resultFontSize,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            textScaler: const TextScaler.linear(
-              1.0,
-            ), // Prevent system font scaling
+            textAlign: TextAlign.right,
+            textScaler: const TextScaler.linear(1.0),
           ),
         ],
       ),

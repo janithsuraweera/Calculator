@@ -56,29 +56,57 @@ class CalculatorButton extends StatelessWidget {
         : (screenWidth < 600 ? 8.0 : 10.0);
 
     // Default colors based on button type / variant
+    // Based on image: Numbers white, Operators green, Clear red
     Color resolveBg() {
       if (backgroundColor != null) return backgroundColor!;
       switch (variant) {
         case ButtonVariant.equals:
-          return const Color(0xFF25D366); // green
+          return const Color(0xFF25D366); // green for equals
         case ButtonVariant.operator:
-          return colorScheme.surfaceContainerHigh;
+          return colorScheme.surfaceContainerHigh; // Background for operators
         case ButtonVariant.action:
-          return colorScheme.surfaceContainerHighest;
+          // Check if it's Clear button (C or AC)
+          if (label == 'C' || label == 'AC') {
+            return colorScheme.surfaceContainerHigh; // Background for red text
+          }
+          return colorScheme
+              .surfaceContainerHigh; // Background for other actions
         case ButtonVariant.digit:
         default:
-          return colorScheme.surfaceContainerHighest;
+          return colorScheme.surfaceContainerHighest; // Background for numbers
       }
     }
 
     Color resolveFg() {
       if (textColor != null) return textColor!;
-      switch (variant) {
-        case ButtonVariant.equals:
-          return Colors.white;
-        default:
-          return colorScheme.onSurface;
+
+      // Clear button (C) should be red
+      if (label == 'C' || label == 'AC') {
+        return Colors.red;
       }
+
+      // Operators should be green
+      if (variant == ButtonVariant.operator) {
+        return Colors.green;
+      }
+
+      // Backspace (⌫) should be green
+      if (label == '⌫') {
+        return Colors.green;
+      }
+
+      // Equals button should be white
+      if (variant == ButtonVariant.equals) {
+        return Colors.white;
+      }
+
+      // Numbers (digits) should be white
+      if (variant == ButtonVariant.digit) {
+        return Colors.white;
+      }
+
+      // Default
+      return colorScheme.onSurface;
     }
 
     final Color bgColor = resolveBg();

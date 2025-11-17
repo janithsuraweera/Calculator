@@ -127,4 +127,52 @@ class HistoryManager {
       // Handle error silently
     }
   }
+
+  /// Move history item up (towards the top of the list)
+  static Future<bool> moveItemUp(DateTime timestamp) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final historyList = getHistoryList(prefs);
+      final index = historyList.indexWhere(
+        (item) => item.timestamp.isAtSameMomentAs(timestamp),
+      );
+      if (index == -1 || index == 0) return false; // Already at top
+
+      // Swap with item above
+      final temp = historyList[index];
+      historyList[index] = historyList[index - 1];
+      historyList[index - 1] = temp;
+
+      final jsonList = historyList.map((e) => e.toJson()).toList();
+      await prefs.setString(_historyKey, jsonEncode(jsonList));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Move history item down (towards the bottom of the list)
+  static Future<bool> moveItemDown(DateTime timestamp) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final historyList = getHistoryList(prefs);
+      final index = historyList.indexWhere(
+        (item) => item.timestamp.isAtSameMomentAs(timestamp),
+      );
+      if (index == -1 || index == historyList.length - 1) {
+        return false; // Already at bottom
+      }
+
+      // Swap with item below
+      final temp = historyList[index];
+      historyList[index] = historyList[index + 1];
+      historyList[index + 1] = temp;
+
+      final jsonList = historyList.map((e) => e.toJson()).toList();
+      await prefs.setString(_historyKey, jsonEncode(jsonList));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }

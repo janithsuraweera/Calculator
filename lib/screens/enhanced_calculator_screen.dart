@@ -952,7 +952,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
             children: [
               // Display
               CalculatorDisplay(
-                expression: _expression,
+                expression: _expression.isNotEmpty ? _expression : '',
                 result: _result,
                 isError: _isError,
               ),
@@ -978,6 +978,8 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                       onHistoryItemTap: _onHistoryItemTap,
                       onClearHistory: _clearHistory,
                       onLabelEdit: _onHistoryLabelEdit,
+                      onHistoryChanged:
+                          _loadHistory, // Reload history when reordered
                     ),
                     // Notes tab
                     const NotesListView(),

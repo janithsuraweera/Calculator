@@ -348,7 +348,8 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           label: '⌫',
           onTap: () => widget.onButtonPressed('C'),
           onLongPress: () => widget.onButtonPressed('BACKSPACE'),
-          variant: ButtonVariant.action,
+          variant: ButtonVariant
+              .operator, // Backspace should be green like operators
           heightOverride: buttonHeight,
         ),
         CalculatorButton(

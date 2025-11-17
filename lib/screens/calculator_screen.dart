@@ -518,6 +518,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                     onHistoryItemTap: _onHistoryItemTap,
                     onClearHistory: _clearHistory,
                     onLabelEdit: _onHistoryLabelEdit,
+                    onHistoryChanged:
+                        _loadHistory, // Reload history when reordered
                   ),
                   if (_vaultEnabled)
                     FutureBuilder<List<CalculationHistory>>(
@@ -541,6 +543,8 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                             if (mounted) setState(() {});
                           },
                           onLabelEdit: null,
+                          onHistoryChanged:
+                              null, // Vault doesn't need reordering
                         );
                       },
                     ),

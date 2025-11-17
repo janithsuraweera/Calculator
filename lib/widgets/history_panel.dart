@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/calculation_history.dart';
+import '../services/history_manager.dart';
 import 'step_by_step_view.dart';
 
 /// History panel widget showing calculation history
 /// History panel widget for displaying calculation history
-class HistoryPanel extends StatelessWidget {
+class HistoryPanel extends StatefulWidget {
   final List<CalculationHistory> history;
   final ValueChanged<CalculationHistory> onHistoryItemTap;
   final VoidCallback onClearHistory;
   final Future<void> Function(CalculationHistory item, String? label)?
   onLabelEdit;
+  final VoidCallback? onHistoryChanged; // Callback when history is reordered
 
   const HistoryPanel({
     super.key,
@@ -19,8 +21,14 @@ class HistoryPanel extends StatelessWidget {
     required this.onHistoryItemTap,
     required this.onClearHistory,
     this.onLabelEdit,
+    this.onHistoryChanged,
   });
 
+  @override
+  State<HistoryPanel> createState() => _HistoryPanelState();
+}
+
+class _HistoryPanelState extends State<HistoryPanel> {
   /// Format date for display
   String _formatDate(DateTime date) {
     final months = [
@@ -49,7 +57,7 @@ class HistoryPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    if (history.isEmpty) {
+    if (widget.history.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -90,7 +98,7 @@ class HistoryPanel extends StatelessWidget {
                 ),
               ),
               TextButton.icon(
-                onPressed: onClearHistory,
+                onPressed: widget.onClearHistory,
                 icon: const Icon(Icons.delete_outline),
                 label: const Text('Clear'),
               ),
@@ -102,9 +110,11 @@ class HistoryPanel extends StatelessWidget {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            itemCount: history.length,
+            itemCount: widget.history.length,
             itemBuilder: (context, index) {
-              final item = history[index];
+              final item = widget.history[index];
+              final canMoveUp = index > 0;
+              final canMoveDown = index < widget.history.length - 1;
               return Card(
                 margin: const EdgeInsets.only(bottom: 8.0),
                 child: ListTile(
@@ -146,7 +156,37 @@ class HistoryPanel extends StatelessWidget {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (onLabelEdit != null)
+                      // Move up button
+                      if (canMoveUp)
+                        IconButton(
+                          tooltip: 'Move up',
+                          icon: const Icon(Icons.arrow_upward, size: 18),
+                          onPressed: () async {
+                            HapticFeedback.lightImpact();
+                            final success = await HistoryManager.moveItemUp(
+                              item.timestamp,
+                            );
+                            if (success && widget.onHistoryChanged != null) {
+                              widget.onHistoryChanged!();
+                            }
+                          },
+                        ),
+                      // Move down button
+                      if (canMoveDown)
+                        IconButton(
+                          tooltip: 'Move down',
+                          icon: const Icon(Icons.arrow_downward, size: 18),
+                          onPressed: () async {
+                            HapticFeedback.lightImpact();
+                            final success = await HistoryManager.moveItemDown(
+                              item.timestamp,
+                            );
+                            if (success && widget.onHistoryChanged != null) {
+                              widget.onHistoryChanged!();
+                            }
+                          },
+                        ),
+                      if (widget.onLabelEdit != null)
                         IconButton(
                           tooltip: (item.label ?? '').isEmpty
                               ? 'Add name'
@@ -165,7 +205,7 @@ class HistoryPanel extends StatelessWidget {
                       ),
                     ],
                   ),
-                  onTap: () => onHistoryItemTap(item),
+                  onTap: () => widget.onHistoryItemTap(item),
                   onLongPress: () {
                     // Show step-by-step solution
                     Navigator.push(
@@ -188,7 +228,7 @@ class HistoryPanel extends StatelessWidget {
     BuildContext context,
     CalculationHistory item,
   ) async {
-    if (onLabelEdit == null) return;
+    if (widget.onLabelEdit == null) return;
 
     final controller = TextEditingController(text: item.label ?? '');
     final result = await showDialog<_LabelDialogResult>(
@@ -251,7 +291,7 @@ class HistoryPanel extends StatelessWidget {
         ? null
         : (result.value?.trim().isEmpty ?? true ? null : result.value!.trim());
 
-    await onLabelEdit!(item, nextLabel);
+    await widget.onLabelEdit!(item, nextLabel);
   }
 }
 
