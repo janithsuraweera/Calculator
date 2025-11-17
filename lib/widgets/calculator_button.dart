@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +14,7 @@ class CalculatorButton extends StatelessWidget {
   final Color? textColor;
   final bool isLarge;
   final ButtonVariant? variant;
+  final double? heightOverride;
 
   const CalculatorButton({
     super.key,
@@ -22,6 +25,7 @@ class CalculatorButton extends StatelessWidget {
     this.textColor,
     this.isLarge = false,
     this.variant,
+    this.heightOverride,
   });
 
   @override
@@ -76,10 +80,20 @@ class CalculatorButton extends StatelessWidget {
     final Color bgColor = resolveBg();
     final Color txtColor = resolveFg();
 
+    final double resolvedHeight = heightOverride ?? buttonHeight;
+    final double resolvedFontSize = heightOverride != null
+        ? math.max(16.0, math.min(fontSize, resolvedHeight * 0.45))
+        : fontSize;
+    final bool useCompactPadding =
+        heightOverride != null && heightOverride! < buttonHeight;
+    final double resolvedPadding = useCompactPadding
+        ? buttonPadding * 0.8
+        : buttonPadding;
+
     return Expanded(
       flex: isLarge ? 2 : 1,
       child: Padding(
-        padding: EdgeInsets.all(buttonPadding),
+        padding: EdgeInsets.all(resolvedPadding),
         child: Material(
           color: bgColor,
           borderRadius: BorderRadius.circular(borderRadius),
@@ -97,14 +111,14 @@ class CalculatorButton extends StatelessWidget {
             },
             borderRadius: BorderRadius.circular(borderRadius),
             child: Container(
-              height: buttonHeight,
+              height: resolvedHeight,
               alignment: Alignment.center,
               child: Text(
                 label,
                 style: theme.textTheme.titleLarge?.copyWith(
                   color: txtColor,
                   fontWeight: FontWeight.w500,
-                  fontSize: fontSize,
+                  fontSize: resolvedFontSize,
                 ),
                 textScaler: const TextScaler.linear(
                   1.0,

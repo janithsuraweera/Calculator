@@ -40,6 +40,7 @@ class _CalculatorAppState extends State<CalculatorApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ThemeManager.themeNotifier.addListener(_onThemeChangedExternally);
     // Load theme settings asynchronously to avoid blocking
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadThemeSettings();
@@ -48,6 +49,7 @@ class _CalculatorAppState extends State<CalculatorApp>
 
   @override
   void dispose() {
+    ThemeManager.themeNotifier.removeListener(_onThemeChangedExternally);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -91,6 +93,10 @@ class _CalculatorAppState extends State<CalculatorApp>
       _accentColorIndex = accentColorIndex;
       _isInitialized = true;
     });
+  }
+
+  void _onThemeChangedExternally() {
+    _loadThemeSettings();
   }
 
   /// Handle splash screen finish

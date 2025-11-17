@@ -323,11 +323,11 @@ class _CalculatorScreenState extends State<CalculatorScreen>
 
   /// Handle history item tap
   /// History item tap handle කිරීම
-  void _onHistoryItemTap(String result) {
+  void _onHistoryItemTap(CalculationHistory item) {
     setState(() {
       _saveState();
-      _expression = result;
-      _result = result;
+      _expression = item.expression;
+      _result = item.result;
       _isError = false;
     });
     // Switch to calculator tab
@@ -344,6 +344,14 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     setState(() {
       _history = [];
     });
+  }
+
+  Future<void> _onHistoryLabelEdit(
+    CalculationHistory item,
+    String? label,
+  ) async {
+    await HistoryManager.updateHistoryLabel(item.timestamp, label);
+    await _loadHistory();
   }
 
   /// Toggle scientific mode
@@ -475,6 +483,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                     history: _history,
                     onHistoryItemTap: _onHistoryItemTap,
                     onClearHistory: _clearHistory,
+                    onLabelEdit: _onHistoryLabelEdit,
                   ),
                   if (_vaultEnabled)
                     FutureBuilder<List<CalculationHistory>>(
@@ -497,6 +506,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
                             await VaultManager.clearVault();
                             if (mounted) setState(() {});
                           },
+                          onLabelEdit: null,
                         );
                       },
                     ),

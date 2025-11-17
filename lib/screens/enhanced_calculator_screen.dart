@@ -509,11 +509,11 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   }
 
   /// Handle history item tap
-  void _onHistoryItemTap(String result) {
+  void _onHistoryItemTap(CalculationHistory item) {
     setState(() {
       _saveState();
-      _expression = result;
-      _result = result;
+      _expression = item.expression;
+      _result = item.result;
       _isError = false;
     });
     setState(() {
@@ -527,6 +527,14 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     setState(() {
       _history = [];
     });
+  }
+
+  Future<void> _onHistoryLabelEdit(
+    CalculationHistory item,
+    String? label,
+  ) async {
+    await HistoryManager.updateHistoryLabel(item.timestamp, label);
+    await _loadHistory();
   }
 
   /// Toggle scientific mode
@@ -905,6 +913,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
                       history: _history,
                       onHistoryItemTap: _onHistoryItemTap,
                       onClearHistory: _clearHistory,
+                      onLabelEdit: _onHistoryLabelEdit,
                     ),
                     // Notes tab
                     const NotesListView(),
@@ -1066,14 +1075,14 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       // First time setup - show PIN setup dialog
       if (!mounted) return false;
       final result = await showDialog<bool>(
-        context: this.context,
+        context: context,
         builder: (context) => const VaultPinDialog(isSetup: true),
       );
       if (!mounted) return false;
       if (result == true) {
         // Ask if user wants to enable biometric
         final useBiometric = await showDialog<bool>(
-          context: this.context,
+          context: context,
           builder: (context) => AlertDialog(
             title: const Text('Enable Biometric?'),
             content: const Text(
@@ -1106,7 +1115,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     // Authenticate with PIN or biometric
     if (!mounted) return false;
     final authenticated = await showDialog<bool>(
-      context: this.context,
+      context: context,
       builder: (context) => const VaultPinDialog(isSetup: false),
     );
     return authenticated ?? false;
@@ -1143,7 +1152,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     if (!mounted) return;
 
     final result = await showDialog<Map<String, dynamic>>(
-      context: this.context,
+      context: context,
       builder: (context) => EnhancedSettingsDialog(
         currentTheme: currentTheme,
         currentAccentColorIndex: currentAccentColorIndex,
@@ -1162,7 +1171,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
         _keypadKey = UniqueKey();
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(this.context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Settings saved successfully')),
       );
     }

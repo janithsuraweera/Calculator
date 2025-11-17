@@ -4,6 +4,8 @@ import '../services/haptic_sound_manager.dart';
 import '../services/vault_manager.dart';
 import '../services/screenshot_detector.dart';
 import '../services/cloud_backup_service.dart';
+import '../models/cloud_backup_config.dart';
+import 'cloud_backup_config_sheet.dart';
 import 'vault_pin_dialog.dart';
 import 'custom_buttons_manager.dart';
 
@@ -34,6 +36,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
   bool screenshotDetectionEnabled = false;
   bool cloudBackupEnabled = false;
   String? googleAccountEmail;
+  CloudBackupConfig? _backupConfig;
 
   @override
   void initState() {
@@ -53,6 +56,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
     final screenshot = ScreenshotDetector.isEnabled();
     final cloudBackup = await CloudBackupService.isSignedIn();
     final email = await CloudBackupService.getCurrentUserEmail();
+    final config = await CloudBackupService.getConfig();
 
     setState(() {
       hapticIntensity = intensity;
@@ -64,6 +68,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
       screenshotDetectionEnabled = screenshot;
       cloudBackupEnabled = cloudBackup;
       googleAccountEmail = email;
+      _backupConfig = config;
     });
   }
 
@@ -71,6 +76,8 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
     return AlertDialog(
       title: const Text('Settings'),
@@ -205,33 +212,38 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                 if (value) {
                   // Enabling vault - check if PIN is set, if not setup PIN
                   final hasPin = await VaultManager.hasPin();
+                  if (!mounted) return;
                   if (!hasPin) {
                     // First time setup - show PIN setup dialog
                     final result = await showDialog<bool>(
                       context: context,
                       builder: (context) => const VaultPinDialog(isSetup: true),
                     );
+                    if (!mounted) return;
                     if (result == true) {
                       // Ask if user wants to enable biometric
                       final useBiometric = await showDialog<bool>(
                         context: context,
-                        builder: (context) => AlertDialog(
+                        builder: (dialogContext) => AlertDialog(
                           title: const Text('Enable Biometric?'),
                           content: const Text(
                             'Do you want to use biometric authentication (fingerprint/face) to unlock the vault?',
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(context, false),
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, false),
                               child: const Text('No'),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.pop(context, true),
+                              onPressed: () =>
+                                  Navigator.pop(dialogContext, true),
                               child: const Text('Yes'),
                             ),
                           ],
                         ),
                       );
+                      if (!mounted) return;
                       if (useBiometric == true) {
                         final isAvailable =
                             await VaultManager.isBiometricAvailable();
@@ -240,28 +252,11 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                         }
                       }
                       await VaultManager.setVaultEnabled(true);
+                      if (!mounted) return;
                       setState(() {
                         vaultEnabled = true;
                       });
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Vault enabled. Vault tab will appear in calculator.',
-                            ),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    }
-                  } else {
-                    // PIN exists - just enable vault (no PIN required here)
-                    await VaultManager.setVaultEnabled(true);
-                    setState(() {
-                      vaultEnabled = true;
-                    });
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      scaffoldMessenger.showSnackBar(
                         const SnackBar(
                           content: Text(
                             'Vault enabled. Vault tab will appear in calculator.',
@@ -270,23 +265,37 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                         ),
                       );
                     }
+                  } else {
+                    // PIN exists - just enable vault (no PIN required here)
+                    await VaultManager.setVaultEnabled(true);
+                    if (!mounted) return;
+                    setState(() {
+                      vaultEnabled = true;
+                    });
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Vault enabled. Vault tab will appear in calculator.',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
                   }
                 } else {
                   // Disabling vault - no password required, just hide it
                   await VaultManager.setVaultEnabled(false);
+                  if (!mounted) return;
                   setState(() {
                     vaultEnabled = false;
                   });
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Vault hidden. Vault tab will be removed from calculator.',
-                        ),
-                        backgroundColor: Colors.orange,
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Vault hidden. Vault tab will be removed from calculator.',
                       ),
-                    );
-                  }
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
                 }
                 // Always signal vault changed when toggled
                 // This will be handled in the Save button
@@ -307,12 +316,13 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                             await VaultManager.isBiometricAvailable();
                         if (isAvailable) {
                           await VaultManager.setUseBiometric(true);
+                          if (!mounted) return;
                           setState(() {
                             biometricEnabled = true;
                           });
                         } else {
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            scaffoldMessenger.showSnackBar(
                               const SnackBar(
                                 content: Text(
                                   'Biometric authentication is not available on this device',
@@ -323,6 +333,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                         }
                       } else {
                         await VaultManager.setUseBiometric(false);
+                        if (!mounted) return;
                         setState(() {
                           biometricEnabled = false;
                         });
@@ -361,77 +372,110 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
               value: cloudBackupEnabled,
               onChanged: (value) async {
                 if (value) {
-                  // Sign in
-                  try {
-                    final success = await CloudBackupService.signIn();
-                    if (success) {
-                      final email =
-                          await CloudBackupService.getCurrentUserEmail();
-                      setState(() {
-                        cloudBackupEnabled = true;
-                        googleAccountEmail = email;
-                      });
-                      // Auto backup
-                      await CloudBackupService.backupAllData();
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Backup completed successfully'),
-                          ),
-                        );
-                      }
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Failed to sign in to Google'),
-                          ),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Google Cloud backup is not available: ${e.toString()}',
-                          ),
-                          duration: const Duration(seconds: 4),
+                  final initialConfig =
+                      _backupConfig ?? await CloudBackupService.getConfig();
+                  final config = await showModalBottomSheet<CloudBackupConfig>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) =>
+                        CloudBackupConfigSheet(initialConfig: initialConfig),
+                  );
+                  if (!mounted) return;
+                  if (config == null) {
+                    setState(() => cloudBackupEnabled = false);
+                    return;
+                  }
+                  final success = await CloudBackupService.signIn(config);
+                  if (success) {
+                    final email =
+                        await CloudBackupService.getCurrentUserEmail();
+                    if (!mounted) return;
+                    setState(() {
+                      cloudBackupEnabled = true;
+                      googleAccountEmail = email;
+                      _backupConfig = config;
+                    });
+                    final autoBackupSuccess =
+                        await CloudBackupService.backupAllData();
+                    if (autoBackupSuccess && mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Backup completed successfully'),
                         ),
                       );
                     }
-                    setState(() {
-                      cloudBackupEnabled = false;
-                    });
+                  } else {
+                    if (!mounted) return;
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to configure cloud backup'),
+                      ),
+                    );
+                    setState(() => cloudBackupEnabled = false);
                   }
                 } else {
-                  // Sign out
                   await CloudBackupService.signOut();
+                  if (!mounted) return;
                   setState(() {
                     cloudBackupEnabled = false;
                     googleAccountEmail = null;
+                    _backupConfig = null;
                   });
                 }
               },
             ),
             if (cloudBackupEnabled) ...[
               const SizedBox(height: 8),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.cloud_done),
+                  title: Text(googleAccountEmail ?? 'Not configured'),
+                  subtitle: Text(
+                    'Frequency: ${_formatFrequency(_backupConfig?.frequency)} · '
+                    'Wi-Fi only: ${_backupConfig?.wifiOnly == true ? 'Yes' : 'No'}',
+                  ),
+                  trailing: TextButton(
+                    onPressed: () async {
+                      final config =
+                          await showModalBottomSheet<CloudBackupConfig>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (context) => CloudBackupConfigSheet(
+                              initialConfig: _backupConfig,
+                            ),
+                          );
+                      if (config == null) return;
+                      final success = await CloudBackupService.signIn(config);
+                      if (!success || !mounted) return;
+                      setState(() {
+                        _backupConfig = config;
+                        googleAccountEmail = config.email;
+                      });
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Cloud backup settings updated'),
+                        ),
+                      );
+                    },
+                    child: const Text('Edit'),
+                  ),
+                ),
+              ),
               ListTile(
                 leading: const Icon(Icons.backup),
                 title: const Text('Backup Now'),
                 onTap: () async {
                   final success = await CloudBackupService.backupAllData();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Backup completed successfully'
-                              : 'Backup failed',
-                        ),
+                  if (!mounted) return;
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'Backup completed successfully'
+                            : 'Backup failed',
                       ),
-                    );
-                  }
+                    ),
+                  );
                 },
               ),
               ListTile(
@@ -440,18 +484,18 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                 onTap: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,
-                    builder: (context) => AlertDialog(
+                    builder: (dialogContext) => AlertDialog(
                       title: const Text('Restore Backup'),
                       content: const Text(
                         'This will replace all current data with the backup. Continue?',
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context, false),
+                          onPressed: () => Navigator.pop(dialogContext, false),
                           child: const Text('Cancel'),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pop(context, true),
+                          onPressed: () => Navigator.pop(dialogContext, true),
                           child: const Text('Restore'),
                         ),
                       ],
@@ -459,17 +503,16 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                   );
                   if (confirmed == true) {
                     final success = await CloudBackupService.restoreData();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            success
-                                ? 'Data restored successfully'
-                                : 'Restore failed',
-                          ),
+                    if (!mounted) return;
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Data restored successfully'
+                              : 'Restore failed',
                         ),
-                      );
-                    }
+                      ),
+                    );
                   }
                 },
               ),
@@ -503,7 +546,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => navigator.pop(),
           child: const Text('Cancel'),
         ),
         FilledButton(
@@ -517,13 +560,12 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
             // Check if vault state changed from initial state
             final vaultChanged = vaultEnabled != initialVaultState;
 
-            if (context.mounted) {
-              Navigator.of(context).pop({
-                'theme': selectedTheme,
-                'accentColorIndex': selectedAccentColorIndex,
-                'vaultChanged': vaultChanged, // Signal if vault state changed
-              });
-            }
+            if (!context.mounted) return;
+            navigator.pop({
+              'theme': selectedTheme,
+              'accentColorIndex': selectedAccentColorIndex,
+              'vaultChanged': vaultChanged, // Signal if vault state changed
+            });
           },
           child: const Text('Save'),
         ),
@@ -536,5 +578,17 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
       title,
       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
     );
+  }
+
+  String _formatFrequency(String? value) {
+    switch (value) {
+      case 'weekly':
+        return 'Weekly';
+      case 'monthly':
+        return 'Monthly';
+      case 'daily':
+      default:
+        return 'Daily';
+    }
   }
 }

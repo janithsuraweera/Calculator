@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/vault_note.dart';
 import '../services/vault_manager.dart';
 import '../services/notes_manager.dart';
@@ -61,25 +60,25 @@ class _NoteEditorState extends State<NoteEditor> {
       firstDate: now,
       lastDate: DateTime(now.year + 1),
     );
-    if (picked != null) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: _reminderDate != null
-            ? TimeOfDay.fromDateTime(_reminderDate!)
-            : TimeOfDay.now(),
+    if (picked == null || !mounted) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: _reminderDate != null
+          ? TimeOfDay.fromDateTime(_reminderDate!)
+          : TimeOfDay.now(),
+    );
+    if (time == null || !mounted) return;
+
+    setState(() {
+      _reminderDate = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        time.hour,
+        time.minute,
       );
-      if (time != null) {
-        setState(() {
-          _reminderDate = DateTime(
-            picked.year,
-            picked.month,
-            picked.day,
-            time.hour,
-            time.minute,
-          );
-        });
-      }
-    }
+    });
   }
 
   Future<void> _saveNote() async {
@@ -159,6 +158,7 @@ class _NoteEditorState extends State<NoteEditor> {
         );
         // Wait a bit for user to see the message
         await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
         Navigator.pop(context, true);
         widget.onSaved?.call();
       }
@@ -228,7 +228,7 @@ class _NoteEditorState extends State<NoteEditor> {
                     title: const Text('Reminder'),
                     subtitle: Text(
                       _reminderDate != null
-                          ? '${_reminderDate!.toLocal().toString().split('.')[0]}'
+                          ? _reminderDate!.toLocal().toString().split('.')[0]
                           : 'No reminder set',
                     ),
                     trailing: Row(
@@ -258,7 +258,7 @@ class _NoteEditorState extends State<NoteEditor> {
                         vertical: 8,
                       ),
                       child: DropdownButtonFormField<String>(
-                        value: _reminderSound ?? 'default',
+                        initialValue: _reminderSound ?? 'default',
                         decoration: const InputDecoration(
                           labelText: 'Reminder Sound',
                           border: OutlineInputBorder(),

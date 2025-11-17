@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'calculator_button.dart';
 import '../models/custom_button.dart';
@@ -22,6 +24,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
   List<CustomButton> _customButtons = [];
   bool _isRadMode = true; // true for Radians, false for Degrees
   bool _isInvMode = false; // Inverse function mode
+  double? _basicButtonHeight;
 
   @override
   void initState() {
@@ -51,88 +54,93 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final screenWidth = mediaQuery.size.width;
-    final isPortrait = mediaQuery.orientation == Orientation.portrait;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final mediaQuery = MediaQuery.of(context);
+        final screenWidth = mediaQuery.size.width;
+        final isPortrait = mediaQuery.orientation == Orientation.portrait;
 
-    // Responsive padding and spacing based on orientation
-    final double padding = isPortrait
-        ? (screenWidth < 360 ? 6.0 : 8.0)
-        : (screenWidth < 600 ? 4.0 : 6.0);
-    rowSpacing = isPortrait
-        ? (screenWidth < 360 ? 6.0 : 8.0)
-        : (screenWidth < 600 ? 4.0 : 6.0);
+        // Responsive padding and spacing based on orientation
+        final double padding = isPortrait
+            ? (screenWidth < 360 ? 6.0 : 8.0)
+            : (screenWidth < 600 ? 4.0 : 6.0);
+        rowSpacing = isPortrait
+            ? (screenWidth < 360 ? 6.0 : 8.0)
+            : (screenWidth < 600 ? 4.0 : 6.0);
 
-    // Build keypad grid with dark background and a floating equals button
-    final keypadGrid = Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: EdgeInsets.all(padding),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.isScientificMode) ...[
-            _buildScientificRow0(context), // Rad/Deg, Inv, π, e, Ans
-            SizedBox(height: rowSpacing),
-            _buildScientificRow1(context),
-            SizedBox(height: rowSpacing),
-            _buildScientificRow2(context),
-            SizedBox(height: rowSpacing),
-            // Custom buttons row
-            if (_customButtons.isNotEmpty) ...[
-              _buildCustomButtonsRow(context),
-              SizedBox(height: rowSpacing),
-            ],
-          ],
-          _buildBasicRow1(context),
-          SizedBox(height: rowSpacing),
-          _buildBasicRow2(context),
-          SizedBox(height: rowSpacing),
-          _buildBasicRow3(context),
-          SizedBox(height: rowSpacing),
-          _buildBasicRow4(context),
-          SizedBox(height: rowSpacing),
-          // Bottom row without equals (equals will float)
-          Row(
+        _basicButtonHeight = !widget.isScientificMode
+            ? _calculateBasicButtonHeight(constraints.maxHeight, padding)
+            : null;
+
+        // Build keypad grid with dark background and a floating equals button
+        final keypadGrid = Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: EdgeInsets.all(padding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              CalculatorButton(
-                label: '0',
-                onTap: () => widget.onButtonPressed('0'),
-                isLarge: true,
-                variant: ButtonVariant.digit,
-              ),
-              CalculatorButton(
-                label: '.',
-                onTap: () => widget.onButtonPressed('.'),
-                variant: ButtonVariant.operator,
-              ),
-              // Spacer to reserve space under the floating equals button
-              const Expanded(child: SizedBox()),
+              if (widget.isScientificMode) ...[
+                _buildScientificRow0(context), // Rad/Deg, Inv, π, e, Ans
+                SizedBox(height: rowSpacing),
+                _buildScientificRow1(context),
+                SizedBox(height: rowSpacing),
+                _buildScientificRow2(context),
+                SizedBox(height: rowSpacing),
+                // Custom buttons row
+                if (_customButtons.isNotEmpty) ...[
+                  _buildCustomButtonsRow(context),
+                  SizedBox(height: rowSpacing),
+                ],
+              ],
+              _buildBasicRow1(context, _basicButtonHeight),
+              SizedBox(height: rowSpacing),
+              _buildBasicRow2(context, _basicButtonHeight),
+              SizedBox(height: rowSpacing),
+              _buildBasicRow3(context, _basicButtonHeight),
+              SizedBox(height: rowSpacing),
+              _buildBasicRow4(context, _basicButtonHeight),
+              SizedBox(height: rowSpacing),
+              _buildBasicZeroRow(context, _basicButtonHeight),
             ],
           ),
-        ],
-      ),
-    );
+        );
 
-    // Always scroll to prevent overflow on small screens and add bottom
-    // padding so the floating equals button doesn't cover content
-    final content = Stack(
-      children: [
-        SingleChildScrollView(
-          padding: EdgeInsets.only(bottom: 88 + padding),
-          child: keypadGrid,
-        ),
-        // Floating big equals button
-        Positioned(
-          right: padding + 4,
-          bottom: padding + 4,
-          child: _buildFloatingEquals(context),
-        ),
-      ],
+        final Widget mainArea = widget.isScientificMode
+            ? SingleChildScrollView(
+                padding: EdgeInsets.only(bottom: 88 + padding),
+                child: keypadGrid,
+              )
+            : Padding(
+                padding: EdgeInsets.only(bottom: 88 + padding),
+                child: keypadGrid,
+              );
+
+        return Stack(
+          children: [
+            Positioned.fill(child: mainArea),
+            Positioned(
+              right: padding + 4,
+              bottom: padding + 4,
+              child: _buildFloatingEquals(context),
+            ),
+          ],
+        );
+      },
     );
-    return content;
+  }
+
+  double _calculateBasicButtonHeight(double maxHeight, double padding) {
+    const int rowCount = 5;
+    const int spacerCount = rowCount - 1;
+    final double reservedSpace =
+        (padding * 2) + (rowSpacing * spacerCount) + 88 + padding;
+    final double rawSpace = maxHeight - reservedSpace;
+    final double safeSpace = math.max(rowCount * 44.0, rawSpace);
+    final double perRow = safeSpace / rowCount;
+    return perRow.clamp(44.0, 64.0);
   }
 
   // Scientific functions row 0: Rad/Deg, Inv, π, e, Ans, EXP, x!
@@ -289,114 +297,151 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
   }
 
   // Basic row 1: AC, C, %, ÷
-  Widget _buildBasicRow1(BuildContext context) {
+  Widget _buildBasicRow1(BuildContext context, double? buttonHeight) {
     return Row(
       children: [
         CalculatorButton(
           label: 'C',
           onTap: () => widget.onButtonPressed('AC'),
           variant: ButtonVariant.action,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '%',
           onTap: () => widget.onButtonPressed('%'),
           variant: ButtonVariant.operator,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '⌫',
           onTap: () => widget.onButtonPressed('C'),
           onLongPress: () => widget.onButtonPressed('BACKSPACE'),
           variant: ButtonVariant.action,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '÷',
           onTap: () => widget.onButtonPressed('÷'),
           variant: ButtonVariant.operator,
+          heightOverride: buttonHeight,
         ),
       ],
     );
   }
 
   // Basic row 2: 7, 8, 9, ×
-  Widget _buildBasicRow2(BuildContext context) {
+  Widget _buildBasicRow2(BuildContext context, double? buttonHeight) {
     return Row(
       children: [
         CalculatorButton(
           label: '7',
           onTap: () => widget.onButtonPressed('7'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '8',
           onTap: () => widget.onButtonPressed('8'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '9',
           onTap: () => widget.onButtonPressed('9'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '×',
           onTap: () => widget.onButtonPressed('×'),
           variant: ButtonVariant.operator,
+          heightOverride: buttonHeight,
         ),
       ],
     );
   }
 
   // Basic row 3: 4, 5, 6, −
-  Widget _buildBasicRow3(BuildContext context) {
+  Widget _buildBasicRow3(BuildContext context, double? buttonHeight) {
     return Row(
       children: [
         CalculatorButton(
           label: '4',
           onTap: () => widget.onButtonPressed('4'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '5',
           onTap: () => widget.onButtonPressed('5'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '6',
           onTap: () => widget.onButtonPressed('6'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '−',
           onTap: () => widget.onButtonPressed('−'),
           variant: ButtonVariant.operator,
+          heightOverride: buttonHeight,
         ),
       ],
     );
   }
 
   // Basic row 4: 1, 2, 3, +
-  Widget _buildBasicRow4(BuildContext context) {
+  Widget _buildBasicRow4(BuildContext context, double? buttonHeight) {
     return Row(
       children: [
         CalculatorButton(
           label: '1',
           onTap: () => widget.onButtonPressed('1'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '2',
           onTap: () => widget.onButtonPressed('2'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '3',
           onTap: () => widget.onButtonPressed('3'),
           variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
         ),
         CalculatorButton(
           label: '+',
           onTap: () => widget.onButtonPressed('+'),
           variant: ButtonVariant.operator,
+          heightOverride: buttonHeight,
         ),
+      ],
+    );
+  }
+
+  Widget _buildBasicZeroRow(BuildContext context, double? buttonHeight) {
+    return Row(
+      children: [
+        CalculatorButton(
+          label: '0',
+          onTap: () => widget.onButtonPressed('0'),
+          isLarge: true,
+          variant: ButtonVariant.digit,
+          heightOverride: buttonHeight,
+        ),
+        CalculatorButton(
+          label: '.',
+          onTap: () => widget.onButtonPressed('.'),
+          variant: ButtonVariant.operator,
+          heightOverride: buttonHeight,
+        ),
+        const Expanded(child: SizedBox()),
       ],
     );
   }

@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../services/notes_manager.dart';
 import '../services/history_manager.dart';
+import '../models/cloud_backup_config.dart';
 
 /// Google Cloud backup service
 /// Note: Requires google_sign_in and firebase_storage packages
@@ -9,42 +10,70 @@ import '../services/history_manager.dart';
 class CloudBackupService {
   static bool _isSignedIn = false;
   static String? _userEmail;
+  static const String _configKey = 'cloud_backup_config';
+  static const String _signedInKey = 'cloud_backup_signed_in';
 
-  /// Sign in to Google
-  /// Note: Requires google_sign_in package implementation
-  static Future<bool> signIn() async {
+  /// Configure and enable cloud backup
+  static Future<bool> signIn(CloudBackupConfig config) async {
     try {
-      // Placeholder - would use GoogleSignIn here
-      // final account = await _googleSignIn.signIn();
-      // _isSignedIn = account != null;
-      // _userEmail = account?.email;
-      // return _isSignedIn;
-
-      // For now, show that this feature requires additional setup
-      throw Exception(
-        'Google Cloud backup requires google_sign_in and firebase packages. '
-        'Please install these packages to enable cloud backup.',
-      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_configKey, jsonEncode(config.toJson()));
+      await prefs.setBool(_signedInKey, true);
+      _isSignedIn = true;
+      _userEmail = config.email;
+      return true;
     } catch (e) {
-      rethrow;
+      return false;
     }
   }
 
   /// Sign out
   static Future<void> signOut() async {
-    // await _googleSignIn.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_signedInKey);
+    await prefs.remove(_configKey);
     _isSignedIn = false;
     _userEmail = null;
   }
 
   /// Check if signed in
   static Future<bool> isSignedIn() async {
-    return _isSignedIn;
+    if (_isSignedIn) return true;
+    final prefs = await SharedPreferences.getInstance();
+    final signedIn = prefs.getBool(_signedInKey) ?? false;
+    if (signedIn) {
+      final configJson = prefs.getString(_configKey);
+      if (configJson != null) {
+        final config = CloudBackupConfig.fromJson(
+          jsonDecode(configJson) as Map<String, dynamic>,
+        );
+        _userEmail = config.email;
+      }
+      _isSignedIn = true;
+    }
+    return signedIn;
   }
 
   /// Get current user
   static Future<String?> getCurrentUserEmail() async {
+    if (_userEmail != null) return _userEmail;
+    final prefs = await SharedPreferences.getInstance();
+    final configJson = prefs.getString(_configKey);
+    if (configJson == null) return null;
+    final config = CloudBackupConfig.fromJson(
+      jsonDecode(configJson) as Map<String, dynamic>,
+    );
+    _userEmail = config.email;
     return _userEmail;
+  }
+
+  static Future<CloudBackupConfig?> getConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    final configJson = prefs.getString(_configKey);
+    if (configJson == null) return null;
+    return CloudBackupConfig.fromJson(
+      jsonDecode(configJson) as Map<String, dynamic>,
+    );
   }
 
   /// Backup all data to Google Cloud
@@ -55,8 +84,13 @@ class CloudBackupService {
       }
 
       // Collect all data
-      final notes = await NotesManager.getNotes();
-      final history = await HistoryManager.getHistoryAsync();
+      final config = await getConfig();
+      final includeNotes = config?.includeNotes ?? true;
+      final includeHistory = config?.includeHistory ?? true;
+      final notes = includeNotes ? await NotesManager.getNotes() : [];
+      final history = includeHistory
+          ? await HistoryManager.getHistoryAsync()
+          : [];
       final prefs = await SharedPreferences.getInstance();
 
       // Get all preferences
@@ -75,6 +109,7 @@ class CloudBackupService {
         'preferences': allPrefs,
         'backupDate': DateTime.now().toIso8601String(),
         'version': '1.0.0',
+        'config': config?.toJson(),
       };
 
       // Convert to JSON

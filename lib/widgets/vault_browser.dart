@@ -39,11 +39,15 @@ class _VaultBrowserState extends State<VaultBrowser> {
   Future<void> _authenticateAndLoad() async {
     setState(() => _isAuthenticating = true);
     final hasPin = await VaultManager.hasPin();
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     if (!hasPin) {
       // No PIN set - show setup
       final result = await showDialog<bool>(
         context: context,
-        builder: (context) => const VaultPinDialog(isSetup: true),
+        builder: (dialogContext) => const VaultPinDialog(isSetup: true),
       );
       if (result == true && mounted) {
         setState(() {
@@ -56,12 +60,16 @@ class _VaultBrowserState extends State<VaultBrowser> {
           _isAuthenticated = false;
           _isAuthenticating = false;
         });
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Vault setup cancelled')),
+        );
+        navigator.pop();
       }
     } else {
       // Authenticate
       final authenticated = await showDialog<bool>(
         context: context,
-        builder: (context) => const VaultPinDialog(isSetup: false),
+        builder: (dialogContext) => const VaultPinDialog(isSetup: false),
       );
       if (authenticated == true && mounted) {
         setState(() {
@@ -74,6 +82,10 @@ class _VaultBrowserState extends State<VaultBrowser> {
           _isAuthenticated = false;
           _isAuthenticating = false;
         });
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Vault authentication failed')),
+        );
+        navigator.pop();
       }
     }
   }
@@ -102,6 +114,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
   }
 
   Future<void> _addFile() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
@@ -122,18 +135,16 @@ class _VaultBrowserState extends State<VaultBrowser> {
           }
         }
         _loadData();
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Files added to vault')));
-        }
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(content: Text('Files added to vault')),
+        );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error adding file: $e')));
-      }
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Error adding file: $e')),
+      );
     }
   }
 
@@ -141,7 +152,7 @@ class _VaultBrowserState extends State<VaultBrowser> {
     final nameController = TextEditingController();
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Create Folder'),
         content: TextField(
           controller: nameController,
@@ -153,11 +164,11 @@ class _VaultBrowserState extends State<VaultBrowser> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, nameController.text),
+            onPressed: () => Navigator.pop(dialogContext, nameController.text),
             child: const Text('Create'),
           ),
         ],
@@ -173,16 +184,16 @@ class _VaultBrowserState extends State<VaultBrowser> {
   Future<void> _deleteFile(VaultFile file) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete File'),
         content: Text('Are you sure you want to delete "${file.name}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],

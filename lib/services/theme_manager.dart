@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Theme manager for handling light/dark themes and accent colors
 class ThemeManager {
+  static final ValueNotifier<int> _themeChangeNotifier = ValueNotifier(0);
   static const String _themeKey = 'theme_mode';
   static const String _accentColorKey = 'accent_color';
   static const String _lightTheme = 'light';
@@ -39,6 +40,7 @@ class ThemeManager {
       final prefs = await SharedPreferences.getInstance();
       final themeString = mode == ThemeMode.dark ? _darkTheme : _lightTheme;
       await prefs.setString(_themeKey, themeString);
+      _notifyThemeChanged();
     } catch (e) {
       // Handle error silently
     }
@@ -60,6 +62,7 @@ class ThemeManager {
       final prefs = await SharedPreferences.getInstance();
       if (index >= 0 && index < accentColors.length) {
         await prefs.setInt(_accentColorKey, index);
+        _notifyThemeChanged();
       }
     } catch (e) {
       // Handle error silently
@@ -88,5 +91,11 @@ class ThemeManager {
         brightness: brightness,
       ),
     );
+  }
+
+  static ValueNotifier<int> get themeNotifier => _themeChangeNotifier;
+
+  static void _notifyThemeChanged() {
+    _themeChangeNotifier.value++;
   }
 }

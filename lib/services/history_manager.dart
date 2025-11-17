@@ -9,22 +9,27 @@ class HistoryManager {
   static const int _maxHistorySize = 100; // Maximum number of history entries
 
   /// Save calculation to history
- 
-  static Future<void> saveCalculation(String expression, String result) async {
+
+  static Future<void> saveCalculation(
+    String expression,
+    String result, {
+    String? label,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final historyList = getHistoryList(prefs);
 
       // Create new history entry
- 
+
       final newEntry = CalculationHistory(
         expression: expression,
         result: result,
         timestamp: DateTime.now(),
+        label: label,
       );
 
       // Add to beginning of list
- 
+
       historyList.insert(0, newEntry);
 
       // Limit history size
@@ -39,7 +44,6 @@ class HistoryManager {
       await prefs.setString(_historyKey, jsonEncode(jsonList));
     } catch (e) {
       // Handle error silently
- 
     }
   }
 
@@ -93,6 +97,34 @@ class HistoryManager {
       return getHistoryList(prefs);
     } catch (e) {
       return [];
+    }
+  }
+
+  /// Update the label associated with a history entry identified by timestamp
+  static Future<void> updateHistoryLabel(
+    DateTime timestamp,
+    String? label,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final historyList = getHistoryList(prefs);
+      final index = historyList.indexWhere(
+        (item) => item.timestamp.isAtSameMomentAs(timestamp),
+      );
+      if (index == -1) return;
+
+      final entry = historyList[index];
+      historyList[index] = CalculationHistory(
+        expression: entry.expression,
+        result: entry.result,
+        timestamp: entry.timestamp,
+        label: label,
+      );
+
+      final jsonList = historyList.map((e) => e.toJson()).toList();
+      await prefs.setString(_historyKey, jsonEncode(jsonList));
+    } catch (e) {
+      // Handle error silently
     }
   }
 }

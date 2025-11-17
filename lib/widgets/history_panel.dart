@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../models/calculation_history.dart';
 import 'step_by_step_view.dart';
 
@@ -6,14 +8,17 @@ import 'step_by_step_view.dart';
 /// History panel widget for displaying calculation history
 class HistoryPanel extends StatelessWidget {
   final List<CalculationHistory> history;
-  final Function(String) onHistoryItemTap;
+  final ValueChanged<CalculationHistory> onHistoryItemTap;
   final VoidCallback onClearHistory;
+  final Future<void> Function(CalculationHistory item, String? label)?
+  onLabelEdit;
 
   const HistoryPanel({
     super.key,
     required this.history,
     required this.onHistoryItemTap,
     required this.onClearHistory,
+    this.onLabelEdit,
   });
 
   /// Format date for display
@@ -103,9 +108,20 @@ class HistoryPanel extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8.0),
                 child: ListTile(
-                  title: Text(
-                    item.expression,
-                    style: theme.textTheme.bodyMedium,
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if ((item.label ?? '').isNotEmpty) ...[
+                        Text(
+                          item.label!,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                      ],
+                      Text(item.expression, style: theme.textTheme.bodyMedium),
+                    ],
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,12 +143,29 @@ class HistoryPanel extends StatelessWidget {
                       ),
                     ],
                   ),
-                  trailing: Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: colorScheme.onSurface.withValues(alpha: 0.3),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (onLabelEdit != null)
+                        IconButton(
+                          tooltip: (item.label ?? '').isEmpty
+                              ? 'Add name'
+                              : 'Rename',
+                          icon: Icon(
+                            (item.label ?? '').isEmpty
+                                ? Icons.label_outline
+                                : Icons.label,
+                          ),
+                          onPressed: () => _showLabelDialog(context, item),
+                        ),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: colorScheme.onSurface.withValues(alpha: 0.3),
+                      ),
+                    ],
                   ),
-                  onTap: () => onHistoryItemTap(item.result),
+                  onTap: () => onHistoryItemTap(item),
                   onLongPress: () {
                     // Show step-by-step solution
                     Navigator.push(
@@ -150,4 +183,81 @@ class HistoryPanel extends StatelessWidget {
       ],
     );
   }
+
+  Future<void> _showLabelDialog(
+    BuildContext context,
+    CalculationHistory item,
+  ) async {
+    if (onLabelEdit == null) return;
+
+    final controller = TextEditingController(text: item.label ?? '');
+    final result = await showDialog<_LabelDialogResult>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            (item.label ?? '').isEmpty ? 'Add a name' : 'Rename calculation',
+          ),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              hintText: 'E.g. Monthly budget',
+            ),
+            textInputAction: TextInputAction.done,
+            autofocus: true,
+            onSubmitted: (_) {
+              HapticFeedback.lightImpact();
+              Navigator.pop(
+                context,
+                _LabelDialogResult(value: controller.text),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            if ((item.label ?? '').isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  Navigator.pop(
+                    context,
+                    const _LabelDialogResult(remove: true),
+                  );
+                },
+                child: const Text('Remove name'),
+              ),
+            FilledButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.pop(
+                  context,
+                  _LabelDialogResult(value: controller.text),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null) return;
+
+    final nextLabel = result.remove
+        ? null
+        : (result.value?.trim().isEmpty ?? true ? null : result.value!.trim());
+
+    await onLabelEdit!(item, nextLabel);
+  }
+}
+
+class _LabelDialogResult {
+  final String? value;
+  final bool remove;
+
+  const _LabelDialogResult({this.value, this.remove = false});
 }
