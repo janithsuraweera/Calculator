@@ -4,10 +4,12 @@ import '../services/haptic_sound_manager.dart';
 import '../services/vault_manager.dart';
 import '../services/screenshot_detector.dart';
 import '../services/cloud_backup_service.dart';
+import '../services/premium_manager.dart';
 import '../models/cloud_backup_config.dart';
 import 'cloud_backup_config_sheet.dart';
 import 'vault_pin_dialog.dart';
 import 'custom_buttons_manager.dart';
+import 'premium_activation_dialog.dart';
 
 /// Enhanced settings dialog with all advanced features
 class EnhancedSettingsDialog extends StatefulWidget {
@@ -39,6 +41,8 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
   bool cloudBackupEnabled = false;
   String? googleAccountEmail;
   CloudBackupConfig? _backupConfig;
+  bool isPremium = false;
+  String buttonStyle = 'filled'; // 'filled' or 'transparent'
 
   @override
   void initState() {
@@ -62,6 +66,8 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
     final cloudBackup = await CloudBackupService.isSignedIn();
     final email = await CloudBackupService.getCurrentUserEmail();
     final config = await CloudBackupService.getConfig();
+    final premium = await PremiumManager.isPremium();
+    final style = await ThemeManager.getButtonStyle();
 
     setState(() {
       hapticIntensity = intensity;
@@ -74,6 +80,8 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
       cloudBackupEnabled = cloudBackup;
       googleAccountEmail = email;
       _backupConfig = config;
+      isPremium = premium;
+      buttonStyle = style;
     });
   }
 
@@ -86,7 +94,7 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         // Revert to original theme settings when dialog is dismissed
         if (selectedTheme != originalTheme) {
@@ -247,16 +255,20 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                     if (!mounted) return;
                     if (!hasPin) {
                       // First time setup - show PIN setup dialog
+                      if (!mounted) return;
+                      final dialogContext = context;
                       final result = await showDialog<bool>(
-                        context: context,
+                        context: dialogContext,
                         builder: (context) =>
                             const VaultPinDialog(isSetup: true),
                       );
                       if (!mounted) return;
                       if (result == true) {
                         // Ask if user wants to enable biometric
+                        if (!mounted) return;
+                        final biometricDialogContext = context;
                         final useBiometric = await showDialog<bool>(
-                          context: context,
+                          context: biometricDialogContext,
                           builder: (dialogContext) => AlertDialog(
                             title: const Text('Enable Biometric?'),
                             content: const Text(
@@ -407,9 +419,11 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                   if (value) {
                     final initialConfig =
                         _backupConfig ?? await CloudBackupService.getConfig();
+                    if (!mounted) return;
+                    final bottomSheetContext = context;
                     final config =
                         await showModalBottomSheet<CloudBackupConfig>(
-                          context: context,
+                          context: bottomSheetContext,
                           isScrollControlled: true,
                           builder: (context) => CloudBackupConfigSheet(
                             initialConfig: initialConfig,
@@ -577,6 +591,175 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
                   }
                 },
               ),
+              const SizedBox(height: 24),
+
+              // Premium Section
+              _buildSectionTitle(theme, 'Premium Features'),
+              Card(
+                elevation: 2,
+                color: isPremium
+                    ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+                    : colorScheme.surfaceContainerHighest,
+                child: ListTile(
+                  leading: Icon(
+                    isPremium ? Icons.star : Icons.star_border,
+                    color: isPremium ? Colors.amber : colorScheme.onSurface,
+                  ),
+                  title: Text(
+                    isPremium ? 'Premium Activated' : 'Upgrade to Premium',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isPremium ? Colors.amber : colorScheme.primary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    isPremium
+                        ? 'All premium features are unlocked'
+                        : 'Unlock advanced features with premium code',
+                  ),
+                  trailing: isPremium
+                      ? Icon(Icons.check_circle, color: Colors.green)
+                      : const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () async {
+                    final result = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => const PremiumActivationDialog(),
+                    );
+                    if (result == true && mounted) {
+                      await _loadSettings();
+                    }
+                  },
+                ),
+              ),
+              if (isPremium) ...[
+                const SizedBox(height: 8),
+                _buildPremiumFeature(
+                  theme,
+                  Icons.palette,
+                  'Advanced Themes',
+                  'Access exclusive color themes',
+                  true,
+                ),
+                _buildPremiumFeature(
+                  theme,
+                  Icons.history,
+                  'Unlimited History',
+                  'Store unlimited calculation history',
+                  true,
+                ),
+                _buildPremiumFeature(
+                  theme,
+                  Icons.file_download,
+                  'Export Calculations',
+                  'Export history to CSV/PDF',
+                  true,
+                ),
+                _buildPremiumFeature(
+                  theme,
+                  Icons.support_agent,
+                  'Priority Support',
+                  'Get priority customer support',
+                  true,
+                ),
+                _buildPremiumFeature(
+                  theme,
+                  Icons.block,
+                  'Ad-Free Experience',
+                  'Enjoy calculator without ads',
+                  true,
+                ),
+              ],
+              const SizedBox(height: 24),
+
+              // Button Style Section (Premium Feature)
+              _buildSectionTitle(theme, 'Button Style'),
+              Card(
+                elevation: 2,
+                color: colorScheme.surfaceContainerHighest,
+                child: Column(
+                  children: [
+                    if (isPremium)
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment<String>(
+                            value: 'filled',
+                            label: Text('Filled'),
+                            tooltip: 'Buttons with background color',
+                          ),
+                          ButtonSegment<String>(
+                            value: 'transparent',
+                            label: Text('Transparent'),
+                            tooltip: 'Transparent buttons with colored text',
+                          ),
+                        ],
+                        selected: {buttonStyle},
+                        onSelectionChanged: (Set<String> newSelection) async {
+                          final value = newSelection.first;
+                          await HapticSoundManager.playClickSound();
+                          await HapticSoundManager.triggerHaptic();
+                          await ThemeManager.setButtonStyle(value);
+                          setState(() {
+                            buttonStyle = value;
+                          });
+                          // Notify parent to reload keypad
+                          if (mounted) {
+                            ThemeManager.themeNotifier.value++;
+                          }
+                        },
+                      )
+                    else
+                      Column(
+                        children: [
+                          ListTile(
+                            title: const Text('Filled Style'),
+                            subtitle: const Text(
+                              'Buttons with background color',
+                            ),
+                            leading: Icon(
+                              buttonStyle == 'filled'
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                            ),
+                            trailing: Icon(
+                              Icons.lock,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                          ),
+                          ListTile(
+                            title: const Text('Transparent Style'),
+                            subtitle: const Text(
+                              'Transparent buttons with colored text',
+                            ),
+                            leading: Icon(
+                              buttonStyle == 'transparent'
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                            ),
+                            trailing: Icon(
+                              Icons.lock,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Text(
+                              'Premium feature - Activate premium to unlock',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -626,6 +809,23 @@ class _EnhancedSettingsDialogState extends State<EnhancedSettingsDialog> {
     return Text(
       title,
       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildPremiumFeature(
+    ThemeData theme,
+    IconData icon,
+    String title,
+    String subtitle,
+    bool enabled,
+  ) {
+    return ListTile(
+      leading: Icon(icon, color: enabled ? Colors.amber : null),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: enabled
+          ? Icon(Icons.check, color: Colors.green, size: 20)
+          : Icon(Icons.lock, size: 16),
     );
   }
 

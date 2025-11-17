@@ -120,6 +120,7 @@ class _NotesListViewState extends State<NotesListView> {
       return;
     }
 
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

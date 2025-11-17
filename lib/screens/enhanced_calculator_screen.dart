@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
@@ -55,8 +56,10 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   bool _vaultEnabled = false;
 
   // Gesture detection
-  double _lastSwipeX = 0;
-  double _lastSwipeY = 0;
+  double _swipeStartX = 0;
+  double _swipeStartY = 0;
+  double _swipeEndX = 0;
+  double _swipeEndY = 0;
 
   // Key for CalculatorKeypad to force reload when custom buttons change
   Key _keypadKey = UniqueKey();
@@ -82,6 +85,17 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     ScreenshotDetector.initialize(context);
     // Add lifecycle observer to auto-hide vault when app closes
     WidgetsBinding.instance.addObserver(this);
+    // Listen to theme changes (including button style changes)
+    ThemeManager.themeNotifier.addListener(_onThemeChanged);
+  }
+
+  void _onThemeChanged() {
+    // Reload keypad when theme or button style changes
+    if (mounted) {
+      setState(() {
+        _keypadKey = UniqueKey();
+      });
+    }
   }
 
   // Removed didChangeDependencies - it was causing unnecessary reloads
@@ -128,6 +142,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    ThemeManager.themeNotifier.removeListener(_onThemeChanged);
     _tabController.dispose();
     // Reset orientation lock when disposing
     SystemChrome.setPreferredOrientations([
@@ -229,31 +244,38 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
   /// Handle gesture swipe start
   void _handleSwipeStart(DragStartDetails details) {
-    _lastSwipeX = details.localPosition.dx;
-    _lastSwipeY = details.localPosition.dy;
+    _swipeStartX = details.globalPosition.dx;
+    _swipeStartY = details.globalPosition.dy;
   }
 
   /// Handle gesture swipe update
   void _handleSwipeUpdate(DragUpdateDetails details) {
-    _lastSwipeX = details.localPosition.dx;
-    _lastSwipeY = details.localPosition.dy;
+    _swipeEndX = details.globalPosition.dx;
+    _swipeEndY = details.globalPosition.dy;
   }
 
   /// Handle gesture swipe end
   void _handleSwipeEnd(DragEndDetails details) {
-    final deltaX = _lastSwipeX;
-    final deltaY = _lastSwipeY;
+    final deltaX = _swipeEndX - _swipeStartX;
+    final deltaY = _swipeEndY - _swipeStartY;
+    final distance = math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    // Swipe right - redo (simplified detection)
-    if (deltaX > 200) {
+    // Only trigger on actual swipes (minimum distance of 100 pixels)
+    // This prevents accidental triggers when tapping between buttons
+    if (distance < 100) {
+      return;
+    }
+
+    // Swipe right - redo
+    if (deltaX > 150 && deltaX.abs() > deltaY.abs()) {
       _redo();
     }
     // Swipe left - undo
-    else if (deltaX < 50) {
+    else if (deltaX < -150 && deltaX.abs() > deltaY.abs()) {
       _undo();
     }
-    // Swipe down - clear
-    else if (deltaY > 200) {
+    // Swipe down - clear (only if significant downward movement)
+    else if (deltaY > 150 && deltaY.abs() > deltaX.abs()) {
       setState(() {
         _saveState();
         _expression = '';
@@ -1216,7 +1238,6 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
     // Load vault flag before showing settings
     await _loadVaultFlag();
     if (!mounted) return;
-
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (dialogContext) => EnhancedSettingsDialog(
@@ -1232,12 +1253,13 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       if (result['vaultChanged'] == true) {
         await _loadVaultFlag();
       }
-      // Reload calculator keypad to show new custom buttons
+      // Reload calculator keypad to show new custom buttons and button style
       setState(() {
         _keypadKey = UniqueKey();
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
         const SnackBar(content: Text('Settings saved successfully')),
       );
     }

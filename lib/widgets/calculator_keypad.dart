@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'calculator_button.dart';
 import '../models/custom_button.dart';
 import '../services/custom_button_manager.dart';
+import '../services/theme_manager.dart';
 
 /// Calculator keypad widget with basic and scientific modes
 class CalculatorKeypad extends StatefulWidget {
@@ -26,11 +27,22 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
   bool _isRadMode = true; // true for Radians, false for Degrees
   bool _isInvMode = false; // Inverse function mode
   double? _basicButtonHeight;
+  String _buttonStyle = 'filled'; // 'filled' or 'transparent'
 
   @override
   void initState() {
     super.initState();
     _loadCustomButtons();
+    _loadButtonStyle();
+  }
+
+  Future<void> _loadButtonStyle() async {
+    final style = await ThemeManager.getButtonStyle();
+    if (mounted) {
+      setState(() {
+        _buttonStyle = style;
+      });
+    }
   }
 
   Future<void> _loadCustomButtons() async {
@@ -49,6 +61,8 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
     if (oldWidget.isScientificMode != widget.isScientificMode) {
       _loadCustomButtons();
     }
+    // Reload button style when widget updates
+    _loadButtonStyle();
   }
 
   late double rowSpacing;
@@ -196,6 +210,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
             textColor: _isRadMode
                 ? Theme.of(context).colorScheme.onPrimary
                 : null,
+            isTransparent: _buttonStyle == 'transparent',
           ),
         ),
         // Inv button
@@ -215,6 +230,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
             textColor: _isInvMode
                 ? Theme.of(context).colorScheme.onPrimary
                 : null,
+            isTransparent: _buttonStyle == 'transparent',
           ),
         ),
         // π (Pi)
@@ -223,6 +239,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
             label: 'π',
             onTap: () => widget.onButtonPressed('π'),
             variant: ButtonVariant.operator,
+            isTransparent: _buttonStyle == 'transparent',
           ),
         ),
         // e (Euler's number)
@@ -231,6 +248,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
             label: 'e',
             onTap: () => widget.onButtonPressed('e'),
             variant: ButtonVariant.operator,
+            isTransparent: _buttonStyle == 'transparent',
           ),
         ),
         // Ans (Previous answer)
@@ -239,6 +257,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
             label: 'Ans',
             onTap: () => widget.onButtonPressed('ANS'),
             variant: ButtonVariant.operator,
+            isTransparent: _buttonStyle == 'transparent',
           ),
         ),
       ],
@@ -252,22 +271,27 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
         CalculatorButton(
           label: 'sin',
           onTap: () => widget.onButtonPressed('sin('),
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: 'cos',
           onTap: () => widget.onButtonPressed('cos('),
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: 'tan',
           onTap: () => widget.onButtonPressed('tan('),
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: 'ln',
           onTap: () => widget.onButtonPressed('ln('),
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: 'log',
           onTap: () => widget.onButtonPressed('log('),
+          isTransparent: _buttonStyle == 'transparent',
         ),
       ],
     );
@@ -297,6 +321,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
                   label: button.label,
                   onTap: () => widget.onButtonPressed(button.action),
                   variant: ButtonVariant.operator,
+                  isTransparent: _buttonStyle == 'transparent',
                 ),
               );
             }).toList(),
@@ -313,17 +338,28 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
         CalculatorButton(
           label: '√',
           onTap: () => widget.onButtonPressed('sqrt('),
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: 'x²',
           onTap: () => widget.onButtonPressed('^2'),
+          isTransparent: _buttonStyle == 'transparent',
         ),
-        CalculatorButton(label: 'xʸ', onTap: () => widget.onButtonPressed('^')),
+        CalculatorButton(
+          label: 'xʸ',
+          onTap: () => widget.onButtonPressed('^'),
+          isTransparent: _buttonStyle == 'transparent',
+        ),
         CalculatorButton(
           label: 'EXP',
           onTap: () => widget.onButtonPressed('EXP'),
+          isTransparent: _buttonStyle == 'transparent',
         ),
-        CalculatorButton(label: 'x!', onTap: () => widget.onButtonPressed('!')),
+        CalculatorButton(
+          label: 'x!',
+          onTap: () => widget.onButtonPressed('!'),
+          isTransparent: _buttonStyle == 'transparent',
+        ),
       ],
     );
   }
@@ -337,12 +373,14 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           onTap: () => widget.onButtonPressed('AC'),
           variant: ButtonVariant.action,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '%',
           onTap: () => widget.onButtonPressed('%'),
           variant: ButtonVariant.operator,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '⌫',
@@ -351,12 +389,14 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           variant: ButtonVariant
               .operator, // Backspace should be green like operators
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '÷',
           onTap: () => widget.onButtonPressed('÷'),
           variant: ButtonVariant.operator,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
       ],
     );
@@ -371,24 +411,28 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           onTap: () => widget.onButtonPressed('7'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '8',
           onTap: () => widget.onButtonPressed('8'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '9',
           onTap: () => widget.onButtonPressed('9'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '×',
           onTap: () => widget.onButtonPressed('×'),
           variant: ButtonVariant.operator,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
       ],
     );
@@ -403,24 +447,28 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           onTap: () => widget.onButtonPressed('4'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '5',
           onTap: () => widget.onButtonPressed('5'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '6',
           onTap: () => widget.onButtonPressed('6'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '−',
           onTap: () => widget.onButtonPressed('−'),
           variant: ButtonVariant.operator,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
       ],
     );
@@ -435,24 +483,28 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           onTap: () => widget.onButtonPressed('1'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '2',
           onTap: () => widget.onButtonPressed('2'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '3',
           onTap: () => widget.onButtonPressed('3'),
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '+',
           onTap: () => widget.onButtonPressed('+'),
           variant: ButtonVariant.operator,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
       ],
     );
@@ -467,12 +519,14 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           isLarge: true,
           variant: ButtonVariant.digit,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         CalculatorButton(
           label: '.',
           onTap: () => widget.onButtonPressed('.'),
           variant: ButtonVariant.operator,
           heightOverride: buttonHeight,
+          isTransparent: _buttonStyle == 'transparent',
         ),
         // Equals button in the same row, horizontally aligned
         Expanded(
@@ -508,10 +562,15 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
                                   : (screenWidth < 600 ? 60.0 : 64.0)))
                       : (screenWidth < 600 ? 50.0 : 56.0));
 
+              final isTransparent = _buttonStyle == 'transparent';
+              final bgColor = isTransparent
+                  ? Colors.transparent
+                  : const Color(0xFF25D366);
+
               return Padding(
                 padding: EdgeInsets.all(buttonPadding),
                 child: Material(
-                  color: const Color(0xFF25D366),
+                  color: bgColor,
                   borderRadius: BorderRadius.circular(borderRadius),
                   elevation: 0,
                   child: InkWell(
@@ -526,7 +585,7 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
                       child: Text(
                         '=',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
+                          color: isTransparent ? Colors.green : Colors.white,
                           fontWeight: FontWeight.w700,
                           fontSize: fontSize,
                         ),
@@ -556,14 +615,26 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
         : (screenWidth < 600 ? 60.0 : 68.0);
     final double fontSize = buttonSize * 0.44; // Proportional font size
 
+    final isTransparent = _buttonStyle == 'transparent';
+    final bgColor = isTransparent
+        ? Colors.transparent
+        : const Color(0xFF25D366);
+    final textColor = isTransparent ? Colors.green : Colors.white;
+
     return SizedBox(
       width: buttonSize,
       height: buttonSize,
       child: FloatingActionButton(
         onPressed: () => widget.onButtonPressed('='),
-        backgroundColor: const Color(0xFF25D366),
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        backgroundColor: bgColor,
+        foregroundColor: textColor,
+        elevation: isTransparent ? 0 : 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: isTransparent
+              ? BorderSide(color: Colors.green.withValues(alpha: 0.3), width: 1)
+              : BorderSide.none,
+        ),
         child: Text(
           '=',
           style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w700),

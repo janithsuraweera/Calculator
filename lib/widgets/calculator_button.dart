@@ -15,6 +15,7 @@ class CalculatorButton extends StatelessWidget {
   final bool isLarge;
   final ButtonVariant? variant;
   final double? heightOverride;
+  final bool isTransparent; // Transparent button style
 
   const CalculatorButton({
     super.key,
@@ -26,6 +27,7 @@ class CalculatorButton extends StatelessWidget {
     this.isLarge = false,
     this.variant,
     this.heightOverride,
+    this.isTransparent = false,
   });
 
   @override
@@ -129,7 +131,7 @@ class CalculatorButton extends StatelessWidget {
         child: Material(
           color: bgColor,
           borderRadius: BorderRadius.circular(borderRadius),
-          elevation: 0,
+          elevation: isTransparent ? 0 : 0,
           child: InkWell(
             onTap: () {
               // Haptic feedback on tap

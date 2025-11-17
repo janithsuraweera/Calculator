@@ -6,6 +6,8 @@ class ThemeManager {
   static final ValueNotifier<int> _themeChangeNotifier = ValueNotifier(0);
   static const String _themeKey = 'theme_mode';
   static const String _accentColorKey = 'accent_color';
+  static const String _buttonStyleKey =
+      'button_style'; // 'filled' or 'transparent'
   static const String _lightTheme = 'light';
   static const String _darkTheme = 'dark';
 
@@ -97,5 +99,28 @@ class ThemeManager {
 
   static void _notifyThemeChanged() {
     _themeChangeNotifier.value++;
+  }
+
+  /// Get button style preference
+  static Future<String> getButtonStyle() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_buttonStyleKey) ?? 'filled'; // Default: filled
+    } catch (e) {
+      return 'filled';
+    }
+  }
+
+  /// Set button style preference
+  static Future<void> setButtonStyle(String style) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (style == 'filled' || style == 'transparent') {
+        await prefs.setString(_buttonStyleKey, style);
+        _notifyThemeChanged();
+      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 }

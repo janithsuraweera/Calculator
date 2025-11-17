@@ -29,6 +29,31 @@ class HistoryPanel extends StatefulWidget {
 }
 
 class _HistoryPanelState extends State<HistoryPanel> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  /// Filter history based on search query
+  List<CalculationHistory> get _filteredHistory {
+    if (_searchQuery.isEmpty) {
+      return widget.history;
+    }
+    final query = _searchQuery.toLowerCase();
+    return widget.history.where((item) {
+      final expression = item.expression.toLowerCase();
+      final result = item.result.toLowerCase();
+      final label = (item.label ?? '').toLowerCase();
+      return expression.contains(query) ||
+          result.contains(query) ||
+          label.contains(query);
+    }).toList();
+  }
+
   /// Format date for display
   String _formatDate(DateTime date) {
     final months = [
@@ -105,120 +130,194 @@ class _HistoryPanelState extends State<HistoryPanel> {
             ],
           ),
         ),
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search history...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest,
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+          ),
+        ),
         // History list
         // History list එක
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            itemCount: widget.history.length,
-            itemBuilder: (context, index) {
-              final item = widget.history[index];
-              final canMoveUp = index > 0;
-              final canMoveDown = index < widget.history.length - 1;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8.0),
-                child: ListTile(
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if ((item.label ?? '').isNotEmpty) ...[
+          child: _filteredHistory.isEmpty && _searchQuery.isNotEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 64,
+                          color: colorScheme.onSurface.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(height: 16),
                         Text(
-                          item.label!,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                          'No results found',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                         ),
-                        const SizedBox(height: 2),
                       ],
-                      Text(item.expression, style: theme.textTheme.bodyMedium),
-                    ],
+                    ),
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        '= ${item.result}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  itemCount: _filteredHistory.length,
+                  itemBuilder: (context, index) {
+                    final item = _filteredHistory[index];
+                    // Find the original index in the full history list
+                    final originalIndex = widget.history.indexOf(item);
+                    final canMoveUp = originalIndex > 0;
+                    final canMoveDown =
+                        originalIndex < widget.history.length - 1;
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8.0),
+                      child: ListTile(
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if ((item.label ?? '').isNotEmpty) ...[
+                              Text(
+                                item.label!,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                            ],
+                            Text(
+                              item.expression,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatDate(item.timestamp),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text(
+                              '= ${item.result}',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatDate(item.timestamp),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Move up button
-                      if (canMoveUp)
-                        IconButton(
-                          tooltip: 'Move up',
-                          icon: const Icon(Icons.arrow_upward, size: 18),
-                          onPressed: () async {
-                            HapticFeedback.lightImpact();
-                            final success = await HistoryManager.moveItemUp(
-                              item.timestamp,
-                            );
-                            if (success && widget.onHistoryChanged != null) {
-                              widget.onHistoryChanged!();
-                            }
-                          },
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Move up button
+                            if (canMoveUp)
+                              IconButton(
+                                tooltip: 'Move up',
+                                icon: const Icon(Icons.arrow_upward, size: 18),
+                                onPressed: () async {
+                                  HapticFeedback.lightImpact();
+                                  final success =
+                                      await HistoryManager.moveItemUp(
+                                        item.timestamp,
+                                      );
+                                  if (success &&
+                                      widget.onHistoryChanged != null) {
+                                    widget.onHistoryChanged!();
+                                  }
+                                },
+                              ),
+                            // Move down button
+                            if (canMoveDown)
+                              IconButton(
+                                tooltip: 'Move down',
+                                icon: const Icon(
+                                  Icons.arrow_downward,
+                                  size: 18,
+                                ),
+                                onPressed: () async {
+                                  HapticFeedback.lightImpact();
+                                  final success =
+                                      await HistoryManager.moveItemDown(
+                                        item.timestamp,
+                                      );
+                                  if (success &&
+                                      widget.onHistoryChanged != null) {
+                                    widget.onHistoryChanged!();
+                                  }
+                                },
+                              ),
+                            if (widget.onLabelEdit != null)
+                              IconButton(
+                                tooltip: (item.label ?? '').isEmpty
+                                    ? 'Add name'
+                                    : 'Rename',
+                                icon: Icon(
+                                  (item.label ?? '').isEmpty
+                                      ? Icons.label_outline
+                                      : Icons.label,
+                                ),
+                                onPressed: () =>
+                                    _showLabelDialog(context, item),
+                              ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
+                          ],
                         ),
-                      // Move down button
-                      if (canMoveDown)
-                        IconButton(
-                          tooltip: 'Move down',
-                          icon: const Icon(Icons.arrow_downward, size: 18),
-                          onPressed: () async {
-                            HapticFeedback.lightImpact();
-                            final success = await HistoryManager.moveItemDown(
-                              item.timestamp,
-                            );
-                            if (success && widget.onHistoryChanged != null) {
-                              widget.onHistoryChanged!();
-                            }
-                          },
-                        ),
-                      if (widget.onLabelEdit != null)
-                        IconButton(
-                          tooltip: (item.label ?? '').isEmpty
-                              ? 'Add name'
-                              : 'Rename',
-                          icon: Icon(
-                            (item.label ?? '').isEmpty
-                                ? Icons.label_outline
-                                : Icons.label,
-                          ),
-                          onPressed: () => _showLabelDialog(context, item),
-                        ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: colorScheme.onSurface.withValues(alpha: 0.3),
-                      ),
-                    ],
-                  ),
-                  onTap: () => widget.onHistoryItemTap(item),
-                  onLongPress: () {
-                    // Show step-by-step solution
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StepByStepView(historyItem: item),
+                        onTap: () => widget.onHistoryItemTap(item),
+                        onLongPress: () {
+                          // Show step-by-step solution
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  StepByStepView(historyItem: item),
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
