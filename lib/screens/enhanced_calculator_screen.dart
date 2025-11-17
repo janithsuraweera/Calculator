@@ -472,7 +472,36 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
         default:
           _saveState();
-          _expression += button;
+          // Handle operators specially
+          if (_isOperator(button)) {
+            // If expression is empty, only allow minus for negative numbers
+            if (_expression.isEmpty) {
+              if (button == '−' || button == '-') {
+                _expression = button;
+              }
+            }
+            // If expression ends with an operator
+            else if (_endsWithOperator(_expression)) {
+              final lastChar = _expression[_expression.length - 1];
+              // If same operator is pressed, don't add another (do nothing)
+              if (lastChar == button ||
+                  (lastChar == '−' && button == '-') ||
+                  (lastChar == '-' && button == '−')) {
+                // Do nothing, keep expression as is
+              } else {
+                // Different operator - replace it
+                _expression =
+                    _expression.substring(0, _expression.length - 1) + button;
+              }
+            }
+            // If expression is just a number (result from =), use that number with operator
+            else {
+              _expression += button;
+            }
+          } else {
+            // For numbers and other characters, just append
+            _expression += button;
+          }
           _evaluateExpression();
           break;
       }
@@ -496,6 +525,25 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       return;
     }
 
+    // If expression ends with operator, show last valid result
+    if (_endsWithOperator(_expression)) {
+      // Try to evaluate without the trailing operator
+      final exprWithoutOp = _expression.substring(0, _expression.length - 1);
+      if (exprWithoutOp.isNotEmpty) {
+        final evalResult = CalculatorEngine.evaluate(
+          exprWithoutOp,
+          isRadMode: _isRadMode,
+        );
+        if (evalResult != null) {
+          _result = evalResult;
+          _isError = false;
+          return;
+        }
+      }
+      // If can't evaluate, keep showing current result
+      return;
+    }
+
     final evalResult = CalculatorEngine.evaluate(
       _expression,
       isRadMode: _isRadMode,
@@ -504,8 +552,24 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
       _result = evalResult;
       _isError = false;
     } else {
-      _result = '0';
+      // Don't show error, keep last valid result if available
+      if (_result == '0' || _result == 'Error') {
+        _result = '0';
+      }
     }
+  }
+
+  /// Check if a button is an operator
+  bool _isOperator(String value) {
+    const operators = ['+', '−', '×', '÷', '^', '-'];
+    return operators.contains(value);
+  }
+
+  /// Check if expression ends with an operator
+  bool _endsWithOperator(String value) {
+    if (value.isEmpty) return false;
+    final last = value[value.length - 1];
+    return _isOperator(last);
   }
 
   /// Handle history item tap
