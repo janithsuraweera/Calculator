@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'calculator_button.dart';
 import '../models/custom_button.dart';
 import '../services/custom_button_manager.dart';
@@ -60,16 +61,21 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
         final screenWidth = mediaQuery.size.width;
         final isPortrait = mediaQuery.orientation == Orientation.portrait;
 
-        // Responsive padding and spacing based on orientation
+        // Responsive padding and spacing based on orientation and screen size
         final double padding = isPortrait
-            ? (screenWidth < 360 ? 6.0 : 8.0)
+            ? (screenWidth < 360 ? 4.0 : (screenWidth < 400 ? 6.0 : 8.0))
             : (screenWidth < 600 ? 4.0 : 6.0);
         rowSpacing = isPortrait
-            ? (screenWidth < 360 ? 6.0 : 8.0)
+            ? (screenWidth < 360 ? 4.0 : (screenWidth < 400 ? 6.0 : 8.0))
             : (screenWidth < 600 ? 4.0 : 6.0);
 
         _basicButtonHeight = !widget.isScientificMode
-            ? _calculateBasicButtonHeight(constraints.maxHeight, padding)
+            ? _calculateBasicButtonHeight(
+                constraints.maxHeight,
+                padding,
+                screenWidth,
+                isPortrait,
+              )
             : null;
 
         // Build keypad grid with dark background and a floating equals button
@@ -108,39 +114,65 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           ),
         );
 
-        final Widget mainArea = widget.isScientificMode
-            ? SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: 88 + padding),
-                child: keypadGrid,
-              )
-            : Padding(
-                padding: EdgeInsets.only(bottom: 88 + padding),
-                child: keypadGrid,
-              );
+        // For scientific mode, we need space for floating equals button
+        // For basic mode, equals button is in the row, so no extra padding needed
+        final Widget mainArea;
+        if (widget.isScientificMode) {
+          // Calculate bottom padding for floating equals button in scientific mode
+          final double equalsButtonSize = isPortrait
+              ? (screenWidth < 360 ? 64.0 : (screenWidth < 400 ? 68.0 : 72.0))
+              : (screenWidth < 600 ? 60.0 : 68.0);
+          final double equalsButtonMargin = 4;
+          final double bottomPadding =
+              equalsButtonSize + equalsButtonMargin + padding;
+          mainArea = SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: bottomPadding),
+            child: keypadGrid,
+          );
+        } else {
+          // Basic mode: equals button is in the row, no extra padding needed
+          mainArea = SingleChildScrollView(child: keypadGrid);
+        }
 
-        return Stack(
-          children: [
-            Positioned.fill(child: mainArea),
-            Positioned(
-              right: padding + 4,
-              bottom: padding + 4,
-              child: _buildFloatingEquals(context),
-            ),
-          ],
-        );
+        // Only show floating equals button in scientific mode
+        if (widget.isScientificMode) {
+          return Stack(
+            children: [
+              Positioned.fill(child: mainArea),
+              Positioned(
+                right: padding + 4,
+                bottom: padding + 4,
+                child: _buildFloatingEquals(context),
+              ),
+            ],
+          );
+        } else {
+          // Basic mode: no floating button, equals is in the row
+          return mainArea;
+        }
       },
     );
   }
 
-  double _calculateBasicButtonHeight(double maxHeight, double padding) {
+  double _calculateBasicButtonHeight(
+    double maxHeight,
+    double padding,
+    double screenWidth,
+    bool isPortrait,
+  ) {
     const int rowCount = 5;
     const int spacerCount = rowCount - 1;
-    final double reservedSpace =
-        (padding * 2) + (rowSpacing * spacerCount) + 88 + padding;
+
+    // In basic mode, equals button is now in the row (not floating)
+    // So we don't need to reserve extra space for it
+    final double reservedSpace = (padding * 2) + (rowSpacing * spacerCount);
     final double rawSpace = maxHeight - reservedSpace;
-    final double safeSpace = math.max(rowCount * 44.0, rawSpace);
+    // Use more conservative minimum to prevent overflow
+    final double minButtonHeight = 40.0; // Reduced from 44.0
+    final double safeSpace = math.max(rowCount * minButtonHeight, rawSpace);
     final double perRow = safeSpace / rowCount;
-    return perRow.clamp(44.0, 64.0);
+    // Clamp to smaller range to fit better on small screens
+    return perRow.clamp(minButtonHeight, 60.0);
   }
 
   // Scientific functions row 0: Rad/Deg, Inv, π, e, Ans, EXP, x!
@@ -441,7 +473,71 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
           variant: ButtonVariant.operator,
           heightOverride: buttonHeight,
         ),
-        const Expanded(child: SizedBox()),
+        // Equals button in the same row, horizontally aligned
+        Expanded(
+          child: Builder(
+            builder: (context) {
+              final mediaQuery = MediaQuery.of(context);
+              final screenWidth = mediaQuery.size.width;
+              final isPortrait = mediaQuery.orientation == Orientation.portrait;
+
+              // Responsive sizing (same as CalculatorButton)
+              final double buttonPadding = isPortrait
+                  ? (screenWidth < 360 ? 2.0 : (screenWidth < 400 ? 3.0 : 4.0))
+                  : (screenWidth < 600 ? 2.0 : 3.0);
+              final double borderRadius = isPortrait
+                  ? (screenWidth < 360
+                        ? 8.0
+                        : (screenWidth < 400 ? 10.0 : 12.0))
+                  : (screenWidth < 600 ? 8.0 : 10.0);
+              final double fontSize = isPortrait
+                  ? (screenWidth < 360
+                        ? 18.0
+                        : (screenWidth < 400
+                              ? 20.0
+                              : (screenWidth < 600 ? 22.0 : 24.0)))
+                  : (screenWidth < 600 ? 18.0 : 20.0);
+              final double resolvedHeight =
+                  buttonHeight ??
+                  (isPortrait
+                      ? (screenWidth < 360
+                            ? 48.0
+                            : (screenWidth < 400
+                                  ? 56.0
+                                  : (screenWidth < 600 ? 60.0 : 64.0)))
+                      : (screenWidth < 600 ? 50.0 : 56.0));
+
+              return Padding(
+                padding: EdgeInsets.all(buttonPadding),
+                child: Material(
+                  color: const Color(0xFF25D366),
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  elevation: 0,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      widget.onButtonPressed('=');
+                    },
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    child: Container(
+                      height: resolvedHeight,
+                      alignment: Alignment.center,
+                      child: Text(
+                        '=',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: fontSize,
+                        ),
+                        textScaler: const TextScaler.linear(1.0),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -449,17 +545,27 @@ class _CalculatorKeypadState extends State<CalculatorKeypad> {
   // (old basic row 5 was unused) – removed
 
   Widget _buildFloatingEquals(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final isPortrait = mediaQuery.orientation == Orientation.portrait;
+
+    // Responsive size based on screen
+    final double buttonSize = isPortrait
+        ? (screenWidth < 360 ? 64.0 : (screenWidth < 400 ? 68.0 : 72.0))
+        : (screenWidth < 600 ? 60.0 : 68.0);
+    final double fontSize = buttonSize * 0.44; // Proportional font size
+
     return SizedBox(
-      width: 72,
-      height: 72,
+      width: buttonSize,
+      height: buttonSize,
       child: FloatingActionButton(
         onPressed: () => widget.onButtonPressed('='),
         backgroundColor: const Color(0xFF25D366),
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        child: const Text(
+        child: Text(
           '=',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w700),
         ),
       ),
     );

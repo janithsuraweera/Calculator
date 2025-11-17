@@ -65,7 +65,7 @@ class _CustomButtonEditorState extends State<CustomButtonEditor> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedMode,
+              initialValue: _selectedMode,
               decoration: const InputDecoration(
                 labelText: 'Mode',
                 border: OutlineInputBorder(),

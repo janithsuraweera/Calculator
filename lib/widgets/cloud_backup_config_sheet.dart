@@ -80,7 +80,7 @@ class _CloudBackupConfigSheetState extends State<CloudBackupConfigSheet> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _frequency,
+              initialValue: _frequency,
               decoration: const InputDecoration(
                 labelText: 'Backup Frequency',
                 border: OutlineInputBorder(),

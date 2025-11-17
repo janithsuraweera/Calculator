@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   /// Navigate to main screen after delay
   void _navigateToMain() {
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(milliseconds: 250), () {
       if (mounted) {
         widget.onFinish();
       }

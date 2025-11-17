@@ -1153,7 +1153,7 @@ class _EnhancedCalculatorScreenState extends State<EnhancedCalculatorScreen>
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => EnhancedSettingsDialog(
+      builder: (dialogContext) => EnhancedSettingsDialog(
         currentTheme: currentTheme,
         currentAccentColorIndex: currentAccentColorIndex,
       ),

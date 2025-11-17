@@ -600,8 +600,8 @@ class _VaultBrowserState extends State<VaultBrowser> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _selectedViewIndex == 0 ? _addFile : _addNote,
-        child: Icon(_selectedViewIndex == 0 ? Icons.add : Icons.note_add),
         tooltip: _selectedViewIndex == 0 ? 'Add File' : 'Add Note',
+        child: Icon(_selectedViewIndex == 0 ? Icons.add : Icons.note_add),
       ),
     );
   }

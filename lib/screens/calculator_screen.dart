@@ -23,6 +23,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     with SingleTickerProviderStateMixin {
   String _expression = '';
   String _result = '0';
+  String _lastValidResult = '0';
   bool _isScientificMode = false;
   bool _isError = false;
 
@@ -133,6 +134,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           _saveState();
           _expression = '';
           _result = '0';
+          _lastValidResult = '0';
           break;
 
         case 'C':
@@ -176,6 +178,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
               final calcResult = evalResult;
               _result = calcResult;
               _expression = calcResult;
+              _lastValidResult = calcResult;
               // Save to history with original expression
               // Original expression සමඟ history එකට save කිරීම
               HistoryManager.saveCalculation(
@@ -288,7 +291,20 @@ class _CalculatorScreenState extends State<CalculatorScreen>
           // Regular buttons (numbers, operators, etc.)
           // Regular buttons (numbers, operators, etc.)
           _saveState();
-          _expression += button;
+          if (_isOperator(button)) {
+            if (_expression.isEmpty) {
+              if (button == '−') {
+                _expression = button;
+              }
+            } else if (_endsWithOperator(_expression)) {
+              _expression =
+                  _expression.substring(0, _expression.length - 1) + button;
+            } else {
+              _expression += button;
+            }
+          } else {
+            _expression += button;
+          }
           // Auto-evaluate for real-time preview (optional)
           // Real-time preview සඳහා auto-evaluate (optional)
           // _evaluateExpression();
@@ -308,15 +324,21 @@ class _CalculatorScreenState extends State<CalculatorScreen>
   void _evaluateExpression() {
     if (_expression.isEmpty) {
       _result = '0';
+      _lastValidResult = '0';
+      return;
+    }
+    if (_endsWithOperator(_expression)) {
+      _result = _lastValidResult;
       return;
     }
 
     final evalResult = CalculatorEngine.evaluate(_expression);
     if (evalResult != null) {
       _result = evalResult;
+      _lastValidResult = evalResult;
       _isError = false;
     } else {
-      _result = '0';
+      _result = _lastValidResult;
       // Don't show error until equals is pressed
     }
   }
@@ -328,6 +350,7 @@ class _CalculatorScreenState extends State<CalculatorScreen>
       _saveState();
       _expression = item.expression;
       _result = item.result;
+      _lastValidResult = item.result;
       _isError = false;
     });
     // Switch to calculator tab
@@ -360,6 +383,17 @@ class _CalculatorScreenState extends State<CalculatorScreen>
     setState(() {
       _isScientificMode = !_isScientificMode;
     });
+  }
+
+  bool _isOperator(String value) {
+    const operators = ['+', '−', '×', '÷', '^'];
+    return operators.contains(value);
+  }
+
+  bool _endsWithOperator(String value) {
+    if (value.isEmpty) return false;
+    final last = value[value.length - 1];
+    return _isOperator(last);
   }
 
   @override
